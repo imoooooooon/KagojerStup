@@ -10,10 +10,11 @@ app.use(express.json());
 
 // Create database connection pool
 const pool = mysql.createPool({
-  host: '127.0.0.1',
-  user: 'root', // Default XAMPP user
-  password: '', // Default XAMPP password (leave blank if none)
-  database: 'crisis_news_system',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
