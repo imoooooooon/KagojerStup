@@ -1,8 +1,8 @@
+import 'dotenv/config'; // <-- CRITICAL: This was missing!
 import express from 'express';
 import mysql from 'mysql2/promise';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
-
 
 const app = express();
 app.use(cors()); // Allows your Vite React app to fetch data
@@ -103,22 +103,19 @@ app.get('/api/news', async (req, res) => {
 // NEW API Endpoint: Submit a Vote
 app.post('/api/vote', async (req, res) => {
   try {
-    const { userId, articleId, voteType } = req.body; // voteType is 'vote_real' or 'vote_fake'
+    const { userId, articleId, voteType } = req.body; 
     
-    // 1. Check if user already voted on this article
     const [existingVote] = await pool.execute(
       "SELECT * FROM user_activity WHERE user_id = ? AND article_id = ? AND activity_type IN ('vote_real', 'vote_fake')",
       [userId, articleId]
     );
     
     if (existingVote.length > 0) {
-      // 2. Update their existing vote (allows user to change mind)
       await pool.execute(
         "UPDATE user_activity SET activity_type = ?, activity_time = NOW() WHERE activity_id = ?",
         [voteType, existingVote[0].activity_id]
       );
     } else {
-      // 3. Insert fresh vote into database
       await pool.execute(
         "INSERT INTO user_activity (user_id, article_id, activity_type) VALUES (?, ?, ?)",
         [userId, articleId, voteType]
@@ -132,24 +129,23 @@ app.post('/api/vote', async (req, res) => {
   }
 });
 
-const PORT = 5000;
+
+// <-- CRITICAL: Let Render choose the port, otherwise fallback to 5000
+const PORT = process.env.PORT || 5000; 
 
 // API Endpoint: User Signup
 app.post('/api/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
     
-    // 1. Check if user already exists
     const [existingUsers] = await pool.execute('SELECT * FROM app_user WHERE email = ?', [email]);
     if (existingUsers.length > 0) {
       return res.status(400).json({ error: 'Email already in use' });
     }
 
-    // 2. Hash the password securely
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // 3. Insert into database
     const [result] = await pool.execute(
       'INSERT INTO app_user (full_name, email, password_hash) VALUES (?, ?, ?)', 
       [name, email, hashedPassword]
@@ -167,7 +163,6 @@ app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Find user by email
     const [users] = await pool.execute('SELECT * FROM app_user WHERE email = ?', [email]);
     if (users.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -175,13 +170,11 @@ app.post('/api/login', async (req, res) => {
 
     const user = users[0];
 
-    // 2. Compare the submitted password with the stored hash
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // 3. Send back user data (NEVER send the password_hash back to the frontend!)
     res.json({
       userId: user.user_id,
       name: user.full_name,
@@ -195,5 +188,5 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Backend API running on http://localhost:${PORT}`);
+  console.log(`Backend API running on port ${PORT}`); // Removed localhost text
 });
