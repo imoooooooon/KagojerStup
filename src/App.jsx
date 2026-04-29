@@ -67,11 +67,26 @@ export default function App() {
       setIsLoading(true);
       try {
         const response = await fetch(`https://kagojerstup.onrender.com/api/news?region=${activeRegion}`);
+        
+        // If the server returns a 500 error, throw it to the catch block
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
-        setNewsFeed(data);
+        
+        // CRITICAL FIX: Ensure the data is actually an array before saving it
+        if (Array.isArray(data)) {
+          setNewsFeed(data);
+        } else {
+          console.error("Backend sent invalid data:", data);
+          setNewsFeed([]); // Set to empty array to prevent .map() crashes
+        }
+        
         setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch news:", error);
+        setNewsFeed([]); // Fail gracefully
         setIsLoading(false);
       }
     };
