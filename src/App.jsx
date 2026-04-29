@@ -66,7 +66,7 @@ export default function App() {
     const fetchNews = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`http://localhost:5000/api/news?region=${activeRegion}`);
+        const response = await fetch(`https://kagojerstup.onrender.com/api/news?region=${activeRegion}`);
         const data = await response.json();
         setNewsFeed(data);
         setIsLoading(false);
@@ -90,7 +90,7 @@ export default function App() {
       : { name: authName, email: authEmail, password: authPassword };
 
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`https://kagojerstup.onrender.com${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -150,7 +150,7 @@ export default function App() {
     }));
 
     try {
-      await fetch('http://localhost:5000/api/vote', {
+      await fetch('https://kagojerstup.onrender.com/api/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser.userId, articleId, voteType })
