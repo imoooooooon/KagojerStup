@@ -61,6 +61,9 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login"); // "login" or "signup"
+
+  // NEW: Track what the user has voted on in this session to prevent spam clicks
+  const [localVotes, setLocalVotes] = useState({});
   
   // Form State
   const [authName, setAuthName] = useState("");
@@ -153,17 +156,35 @@ export default function App() {
       return;
     }
 
-    // Optimistically update the UI
+    // 1. Check what they previously voted for this specific article
+    const previousVote = localVotes[articleId];
+    
+    // If they click the exact same button again, do nothing!
+    if (previousVote === voteType) {
+      return; 
+    }
+
+    // 2. Optimistically update the UI math
     setNewsFeed(prevFeed => prevFeed.map(news => {
       if (news.id === articleId) {
         let newScore = news.score;
         let newReal = news.realVotes || 0;
         let newFake = news.fakeVotes || 0;
 
+        // If they are changing their vote, remove the old vote's math first
+        if (previousVote === 'vote_real') {
+          newReal = Math.max(0, newReal - 1);
+          newScore -= 2;
+        } else if (previousVote === 'vote_fake') {
+          newFake = Math.max(0, newFake - 1);
+          newScore += 5;
+        }
+
+        // Apply the new vote's math
         if (voteType === 'vote_real') {
           newReal += 1;
           newScore = Math.min(100, newScore + 2);
-        } else {
+        } else if (voteType === 'vote_fake') {
           newFake += 1;
           newScore = Math.max(0, newScore - 5);
         }
@@ -173,6 +194,10 @@ export default function App() {
       return news;
     }));
 
+    // 3. Save this new vote locally so they can't spam it
+    setLocalVotes(prev => ({ ...prev, [articleId]: voteType }));
+
+    // 4. Send to backend
     try {
       await fetch('https://kagojerstup.onrender.com/api/vote', {
         method: 'POST',
@@ -542,14 +567,23 @@ export default function App() {
                           <span className="text-xs text-slate-400 font-medium mr-1">Verify:</span>
                           <button 
                             onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_real'); }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 transition-colors text-xs font-bold cursor-pointer"
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors text-xs font-bold cursor-pointer border
+                              ${localVotes[news.id] === 'vote_real' 
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-inner' // Active style
+                                : 'bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border-slate-200 hover:border-emerald-200' // Default style
+                              }`}
                             title="Mark as Real News"
                           >
                             <ThumbsUpIcon className="w-4 h-4" /> Real <span className="opacity-50 ml-1">({news.realVotes || 0})</span>
                           </button>
+                          
                           <button 
                             onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_fake'); }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 border border-slate-200 hover:border-red-200 transition-colors text-xs font-bold cursor-pointer"
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors text-xs font-bold cursor-pointer border
+                              ${localVotes[news.id] === 'vote_fake' 
+                                ? 'bg-red-100 text-red-800 border-red-300 shadow-inner' // Active style
+                                : 'bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 border-slate-200 hover:border-red-200' // Default style
+                              }`}
                             title="Mark as Fake News"
                           >
                             <ThumbsDownIcon className="w-4 h-4" /> Fake <span className="opacity-50 ml-1">({news.fakeVotes || 0})</span>
