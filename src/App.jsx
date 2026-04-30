@@ -51,7 +51,14 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   // --- Authentication State ---
-  const [currentUser, setCurrentUser] = useState(null);
+  // Check local storage FIRST before setting user to null
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem('kagojer_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  // NEW: State for the password eye toggle
+  const [showPassword, setShowPassword] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login"); // "login" or "signup"
   
@@ -123,6 +130,7 @@ export default function App() {
         setAuthPassword(""); 
       } else {
         setCurrentUser(data);
+        localStorage.setItem('kagojer_user', JSON.stringify(data)); // <-- ADD THIS LINE
         setIsAuthModalOpen(false);
         setAuthEmail("");
         setAuthPassword("");
@@ -134,6 +142,7 @@ export default function App() {
 
   const handleLogout = () => {
     setCurrentUser(null);
+    localStorage.removeItem('kagojer_user');
   };
 
   // --- Voting System ---
@@ -668,7 +677,23 @@ export default function App() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                    <input type="password" required value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:outline-none" placeholder="••••••••"/>
+                    <div className="relative">
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        required 
+                        value={authPassword} 
+                        onChange={(e) => setAuthPassword(e.target.value)} 
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:outline-none pr-10" 
+                        placeholder="••••••••"
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowPassword(!showPassword)} 
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-700 focus:outline-none"
+                      >
+                        {showPassword ? "🙈" : "👁️"}
+                      </button>
+                    </div>
                   </div>
                   <button type="submit" className="w-full bg-[#2563EB] hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors mt-2">
                     {authMode === "login" ? "Sign In" : "Sign Up"}
