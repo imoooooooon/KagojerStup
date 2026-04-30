@@ -107,7 +107,6 @@ export default function App() {
   // --- Fetch User's Past Votes on Login/Refresh ---
   useEffect(() => {
     const fetchUserVotes = async () => {
-      // If nobody is logged in, clear the highlighted buttons
       if (!currentUser) {
         setLocalVotes({}); 
         return;
@@ -117,7 +116,10 @@ export default function App() {
         const response = await fetch(`https://kagojerstup.onrender.com/api/user-votes/${currentUser.userId}`);
         if (response.ok) {
           const pastVotes = await response.json();
-          setLocalVotes(pastVotes); // Pre-fill the highlighted buttons from the database!
+          console.log("🔥 Votes loaded from database:", pastVotes); // <-- This will prove it works!
+          setLocalVotes(pastVotes); 
+        } else {
+          console.log("⏳ Waiting for Render to update...");
         }
       } catch (error) {
         console.error("Failed to load past votes:", error);
@@ -125,7 +127,7 @@ export default function App() {
     };
 
     fetchUserVotes();
-  }, [currentUser]); // This runs automatically whenever currentUser changes
+  }, [currentUser]);
 
   // --- Handle Authentication Submit ---
   const handleAuthSubmit = async (e) => {
@@ -179,22 +181,59 @@ export default function App() {
       return;
     }
 
-    // 1. Check what they previously voted for this specific article
     const previousVote = localVotes[articleId];
-    
-    // If they click the exact same button again, do nothing!
+
+    // ----------------------------------------------------
+    // SCENARIO 1: UN-VOTING (Clicking the active button again)
+    // ----------------------------------------------------
     if (previousVote === voteType) {
+      setNewsFeed(prevFeed => prevFeed.map(news => {
+        if (news.id === articleId) {
+          let newScore = news.score;
+          let newReal = news.realVotes || 0;
+          let newFake = news.fakeVotes || 0;
+
+          if (voteType === 'vote_real') {
+            newReal = Math.max(0, newReal - 1);
+            newScore = Math.max(0, newScore - 2); 
+          } else if (voteType === 'vote_fake') {
+            newFake = Math.max(0, newFake - 1);
+            newScore = Math.min(100, newScore + 5); 
+          }
+          return { ...news, score: newScore, realVotes: newReal, fakeVotes: newFake };
+        }
+        return news;
+      }));
+
+      // Clear the local memory so the button turns grey again
+      setLocalVotes(prev => {
+        const newState = { ...prev };
+        delete newState[articleId]; 
+        return newState;
+      });
+
+      // Tell database to delete it
+      try {
+        await fetch('https://kagojerstup.onrender.com/api/remove-vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.userId, articleId })
+        });
+      } catch (error) {
+        console.error("Failed to remove vote:", error);
+      }
       return; 
     }
 
-    // 2. Optimistically update the UI math
+    // ----------------------------------------------------
+    // SCENARIO 2: NEW VOTE or CHANGING VOTE
+    // ----------------------------------------------------
     setNewsFeed(prevFeed => prevFeed.map(news => {
       if (news.id === articleId) {
         let newScore = news.score;
         let newReal = news.realVotes || 0;
         let newFake = news.fakeVotes || 0;
 
-        // If they are changing their vote, remove the old vote's math first
         if (previousVote === 'vote_real') {
           newReal = Math.max(0, newReal - 1);
           newScore -= 2;
@@ -203,7 +242,6 @@ export default function App() {
           newScore += 5;
         }
 
-        // Apply the new vote's math
         if (voteType === 'vote_real') {
           newReal += 1;
           newScore = Math.min(100, newScore + 2);
@@ -217,10 +255,8 @@ export default function App() {
       return news;
     }));
 
-    // 3. Save this new vote locally so they can't spam it
     setLocalVotes(prev => ({ ...prev, [articleId]: voteType }));
 
-    // 4. Send to backend
     try {
       await fetch('https://kagojerstup.onrender.com/api/vote', {
         method: 'POST',
