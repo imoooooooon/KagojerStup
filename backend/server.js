@@ -1,11 +1,11 @@
-import 'dotenv/config'; // <-- CRITICAL: This was missing!
+import 'dotenv/config';
 import express from 'express';
 import mysql from 'mysql2/promise';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
 
 const app = express();
-app.use(cors()); // Allows your Vite React app to fetch data
+app.use(cors());
 app.use(express.json());
 
 // Create database connection pool
@@ -70,11 +70,7 @@ app.get('/api/news', async (req, res) => {
     const [rows] = await pool.execute(sqlQuery, queryParams);
 
     const formattedData = rows.map(row => {
-      // THE FAKE NEWS ALGORITHM:
-      // Base score + (Real Votes * 2%) - (Fake Votes * 5% penalty)
       let finalScore = row.base_score + (row.real_votes * 2) - (row.fake_votes * 5);
-      
-      // Keep score clamped between 0 and 100
       finalScore = Math.max(0, Math.min(100, finalScore));
 
       return {
@@ -100,7 +96,7 @@ app.get('/api/news', async (req, res) => {
   }
 });
 
-// NEW API Endpoint: Submit a Vote
+// API Endpoint: Submit a Vote
 app.post('/api/vote', async (req, res) => {
   try {
     const { userId, articleId, voteType } = req.body; 
@@ -129,8 +125,49 @@ app.post('/api/vote', async (req, res) => {
   }
 });
 
+// --- THE TWO MISSING ENDPOINTS ARE NOW HERE! ---
 
-// <-- CRITICAL: Let Render choose the port, otherwise fallback to 5000
+// API Endpoint: Get all previous votes for a user
+app.get('/api/user-votes/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const [votes] = await pool.execute(
+      "SELECT article_id, activity_type FROM user_activity WHERE user_id = ? AND activity_type IN ('vote_real', 'vote_fake')",
+      [userId]
+    );
+
+    const voteMap = {};
+    votes.forEach(vote => {
+      voteMap[vote.article_id] = vote.activity_type;
+    });
+
+    res.json(voteMap);
+  } catch (error) {
+    console.error("Failed to fetch user votes:", error);
+    res.status(500).json({ error: 'Failed to fetch votes from database' });
+  }
+});
+
+// API Endpoint: Remove a Vote (Un-toggle)
+app.post('/api/remove-vote', async (req, res) => {
+  try {
+    const { userId, articleId } = req.body; 
+    
+    await pool.execute(
+      "DELETE FROM user_activity WHERE user_id = ? AND article_id = ? AND activity_type IN ('vote_real', 'vote_fake')",
+      [userId, articleId]
+    );
+    
+    res.json({ message: "Vote removed successfully" });
+  } catch (error) {
+    console.error("Vote removal error:", error);
+    res.status(500).json({ error: 'Failed to remove vote from database' });
+  }
+});
+
+// -----------------------------------------------
+
 const PORT = process.env.PORT || 5000; 
 
 // API Endpoint: User Signup
@@ -188,5 +225,5 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Backend API running on port ${PORT}`); // Removed localhost text
+  console.log(`Backend API running on port ${PORT}`); 
 });
