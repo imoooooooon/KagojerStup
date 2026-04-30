@@ -104,6 +104,29 @@ export default function App() {
     fetchNews();
   }, [activeRegion]);
 
+  // --- Fetch User's Past Votes on Login/Refresh ---
+  useEffect(() => {
+    const fetchUserVotes = async () => {
+      // If nobody is logged in, clear the highlighted buttons
+      if (!currentUser) {
+        setLocalVotes({}); 
+        return;
+      }
+
+      try {
+        const response = await fetch(`https://kagojerstup.onrender.com/api/user-votes/${currentUser.userId}`);
+        if (response.ok) {
+          const pastVotes = await response.json();
+          setLocalVotes(pastVotes); // Pre-fill the highlighted buttons from the database!
+        }
+      } catch (error) {
+        console.error("Failed to load past votes:", error);
+      }
+    };
+
+    fetchUserVotes();
+  }, [currentUser]); // This runs automatically whenever currentUser changes
+
   // --- Handle Authentication Submit ---
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
