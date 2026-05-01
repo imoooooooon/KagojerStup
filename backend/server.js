@@ -5,6 +5,9 @@ import cors from 'cors';
 import bcrypt from 'bcrypt';
 import { startNewsFetcher } from './newsFetcher.js';
 
+import cron from 'node-cron';
+import { processNewArticles } from './aiWorker.js';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -227,6 +230,18 @@ app.post('/api/login', async (req, res) => {
     console.error("Login error:", error);
     res.status(500).json({ error: 'Database error during login' });
   }
+});
+
+// --- AI Cron Job ---
+// This runs automatically every 30 minutes ( "*/30 * * * *" )
+cron.schedule('*/30 * * * *', () => {
+  processNewArticles(pool);
+});
+
+// You can also add a manual trigger route so you don't have to wait 30 mins to test it!
+app.get('/api/trigger-ai', async (req, res) => {
+  processNewArticles(pool); // Runs in background
+  res.json({ message: "AI processing started in the background!" });
 });
 
 app.listen(PORT, () => {
