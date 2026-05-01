@@ -272,6 +272,26 @@ export default function App() {
     }
   };
 
+  // --- Track Article Clicks ---
+  const handleArticleClick = async (articleId) => {
+    if (!currentUser) return; // Only track logged-in users
+
+    try {
+      // Don't await this, let it run in the background so it doesn't slow down the user clicking the link
+      fetch('https://kagojerstup.onrender.com/api/track-activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: currentUser.userId, 
+          articleId: articleId,
+          activityType: 'click' 
+        })
+      });
+    } catch (error) {
+      console.error("Failed to track click:", error);
+    }
+  };
+
   return (
     <>
       <style dangerouslySetInnerHTML={{__html: `
@@ -603,11 +623,18 @@ export default function App() {
                       </div>
 
                       <h3 className="text-xl font-bold text-[#0F172A] mb-3 hover:text-[#2563EB] transition-colors leading-snug">
-                        <a href={news.url || "#"} target="_blank" rel="noopener noreferrer" className="focus:outline-none">
+                        <a 
+                          href={news.url || "#"} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="focus:outline-none"
+                          onClick={() => handleArticleClick(news.id)} // <-- ADD THIS LINE
+                        >
                           <span className="absolute inset-0" aria-hidden="true"></span>
                           {news.title}
                         </a>
                       </h3>
+                      
                       <p className="text-sm text-[#64748B] mb-5 line-clamp-2 leading-relaxed">{news.summary}</p>
                     </div>
 
