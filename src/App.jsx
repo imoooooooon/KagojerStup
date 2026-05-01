@@ -306,11 +306,17 @@ export default function App() {
         <nav className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-[#E2E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded bg-[#2563EB] text-white flex items-center justify-center font-bold text-lg">
+              <div 
+                className="flex items-center gap-2 cursor-pointer group" 
+                onClick={() => window.location.reload()}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') window.location.reload(); }}
+              >
+                <div className="w-8 h-8 rounded bg-[#2563EB] text-white flex items-center justify-center font-bold text-lg group-hover:bg-blue-700 transition-colors">
                   ক
                 </div>
-                <span className="font-bold text-xl tracking-tight">কাগজের স্তূপ</span>
+                <span className="font-bold text-xl tracking-tight group-hover:text-[#2563EB] transition-colors">কাগজের স্তূপ</span>
               </div>
               <div className="hidden md:flex space-x-8">
                 <a href="#" className="text-[#0F172A] font-medium hover:text-[#2563EB] transition-colors">Home</a>
