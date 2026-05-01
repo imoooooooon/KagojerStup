@@ -76,33 +76,37 @@ export default function App() {
     const fetchNews = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`https://kagojerstup.onrender.com/api/news?region=${activeRegion}`);
+        // AUTOMATIC SWITCH: Use personalized endpoint if logged in, otherwise standard
+        let endpoint = `https://kagojerstup.onrender.com/api/news?region=${activeRegion}`;
         
-        // If the server returns a 500 error, throw it to the catch block
+        if (currentUser && currentUser.userId) {
+           endpoint = `https://kagojerstup.onrender.com/api/news/personalized?region=${activeRegion}&userId=${currentUser.userId}`;
+        }
+
+        const response = await fetch(endpoint);
+        
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
         
-        // CRITICAL FIX: Ensure the data is actually an array before saving it
         if (Array.isArray(data)) {
           setNewsFeed(data);
         } else {
-          console.error("Backend sent invalid data:", data);
-          setNewsFeed([]); // Set to empty array to prevent .map() crashes
+          setNewsFeed([]); 
         }
         
         setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch news:", error);
-        setNewsFeed([]); // Fail gracefully
+        setNewsFeed([]); 
         setIsLoading(false);
       }
     };
 
     fetchNews();
-  }, [activeRegion]);
+  }, [activeRegion, currentUser]); // ADD currentUser to dependency array
 
   // --- Fetch User's Past Votes on Login/Refresh ---
   useEffect(() => {
