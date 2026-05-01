@@ -7,7 +7,7 @@ const parser = new Parser();
 export const startNewsFetcher = (pool) => {
   
   // This CRON expression means: Run at minute 0 and 30 past the hour (every 30 mins)
-  cron.schedule('*/30 * * * *', async () => {
+  cron.schedule('* * * * *', async () => {
     console.log('🔄 [CRON] Starting 30-minute news fetch cycle...');
 
     try {

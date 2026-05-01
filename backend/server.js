@@ -3,10 +3,12 @@ import express from 'express';
 import mysql from 'mysql2/promise';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
+import { startNewsFetcher } from './newsFetcher.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 
 // Create database connection pool
 const pool = mysql.createPool({
@@ -19,6 +21,9 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0
 });
+
+// Start the news fetcher
+startNewsFetcher(pool);
 
 // API Endpoint: Get localized news feed
 app.get('/api/news', async (req, res) => {
