@@ -1,39 +1,44 @@
 import cron from 'node-cron';
 import Parser from 'rss-parser';
 
-const parser = new Parser();
+// THE FIX: Add a browser disguise and a timeout limit
+const parser = new Parser({
+  timeout: 15000, // Give up after 15 seconds so one bad site doesn't freeze everything
+  headers: {
+    // This makes the news sites think you are a real human using Google Chrome
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Accept': 'application/rss+xml, application/xml, text/xml; q=0.1'
+  }
+});
 
-// Export a function that accepts your database pool
 export const startNewsFetcher = (pool) => {
   
-  // This CRON expression means: Run at minute 0 and 30 past the hour (every 30 mins)
   cron.schedule('*/30 * * * *', async () => {
     console.log('🔄 [CRON] Starting 30-minute news fetch cycle...');
 
     try {
-      // 1. Get all active RSS feeds from your database
+      // 1. Get all RSS feeds (added a check to ignore empty strings)
       const [sources] = await pool.execute(
-        'SELECT source_id, source_name, rss_url FROM news_source WHERE rss_url IS NOT NULL'
+        "SELECT source_id, source_name, rss_url FROM news_source WHERE rss_url IS NOT NULL AND rss_url != ''"
       );
 
       for (const source of sources) {
         console.log(`📡 Fetching feed for: ${source.source_name}...`);
         
         try {
-          // 2. Parse the live RSS feed
+          // 2. Parse the RSS feed with our new disguised parser
           const feed = await parser.parseURL(source.rss_url);
           let newArticlesCount = 0;
           
           for (const item of feed.items) {
-            // 3. Check if we already saved this article (prevent duplicates)
+            // 3. Prevent duplicates
             const [existing] = await pool.execute(
               'SELECT article_id FROM news_article WHERE article_url = ?',
               [item.link]
             );
 
             if (existing.length === 0) {
-              // 4. Create a generic "Event" first to satisfy your database rules
-              // (Using Region 1 / Dhaka as a default placeholder for now)
+              // 4. Create dummy event
               const [eventResult] = await pool.execute(
                 `INSERT INTO event (region_id, canonical_title, event_description, event_type) 
                  VALUES (?, ?, ?, ?)`,
@@ -42,8 +47,7 @@ export const startNewsFetcher = (pool) => {
               
               const newEventId = eventResult.insertId;
 
-              // 5. Insert the actual News Article linked to the new Event and the Source
-              // We safely format the date to MySQL datetime format
+              // 5. Insert News Article safely
               const publishDate = item.pubDate ? new Date(item.pubDate) : new Date();
               
               await pool.execute(
@@ -56,7 +60,7 @@ export const startNewsFetcher = (pool) => {
                   source.source_id, 
                   item.contentSnippet || 'Click to read more.', 
                   publishDate, 
-                  'General', // Default category
+                  'General', 
                   item.link
                 ]
               );
@@ -65,8 +69,10 @@ export const startNewsFetcher = (pool) => {
             }
           }
           console.log(`✅ ${source.source_name}: Added ${newArticlesCount} new articles.`);
+        
         } catch (feedError) {
-          console.error(`❌ Failed to process feed ${source.rss_url}:`, feedError.message);
+          // THE FIX: Better error logging so we know EXACTLY why a site failed
+          console.error(`❌ Failed on ${source.source_name}: ${feedError.message}`);
         }
       }
       console.log('🏁 [CRON] News fetch cycle complete.');
