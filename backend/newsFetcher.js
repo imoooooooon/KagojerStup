@@ -13,7 +13,7 @@ const parser = new Parser({
 
 export const startNewsFetcher = (pool) => {
   
-  cron.schedule('* * * * *', async () => {
+  cron.schedule('*/30 * * * *', async () => {
     console.log('🔄 [CRON] Starting 30-minute news fetch cycle...');
 
     try {
