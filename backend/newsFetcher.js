@@ -27,7 +27,9 @@ export const startNewsFetcher = (pool) => {
         
         try {
           // 2. Parse the RSS feed with our new disguised parser
-          const feed = await parser.parseURL(source.rss_url);
+          // THE FIX: Use AllOrigins as a trusted middleman to bypass Cloudflare/IP blocks
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(source.rss_url)}`;
+          const feed = await parser.parseURL(proxyUrl);
           let newArticlesCount = 0;
           
           for (const item of feed.items) {
