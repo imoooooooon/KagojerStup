@@ -4,14 +4,11 @@ import mysql from 'mysql2/promise';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
 import { startNewsFetcher } from './newsFetcher.js';
-
-import cron from 'node-cron';
 import { processNewArticles } from './aiWorker.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 
 // Create database connection pool
 const pool = mysql.createPool({
@@ -25,7 +22,7 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Start the news fetcher
+// Start the RSS news fetcher (This CRON job still runs every 30 mins to get links)
 startNewsFetcher(pool);
 
 // API Endpoint: Get localized news feed
@@ -133,8 +130,6 @@ app.post('/api/vote', async (req, res) => {
   }
 });
 
-// --- THE TWO MISSING ENDPOINTS ARE NOW HERE! ---
-
 // API Endpoint: Get all previous votes for a user
 app.get('/api/user-votes/:userId', async (req, res) => {
   try {
@@ -173,10 +168,6 @@ app.post('/api/remove-vote', async (req, res) => {
     res.status(500).json({ error: 'Failed to remove vote from database' });
   }
 });
-
-// -----------------------------------------------
-
-const PORT = process.env.PORT || 5000; 
 
 // API Endpoint: User Signup
 app.post('/api/signup', async (req, res) => {
@@ -232,29 +223,11 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// --- AI Cron Job ---
-// This runs automatically every 30 minutes ( "*/30 * * * *" )
-cron.schedule('*/30 * * * *', () => {
-  processNewArticles(pool);
-});
-
-// You can also add a manual trigger route so you don't have to wait 30 mins to test it!
-app.get('/api/trigger-ai', async (req, res) => {
-  processNewArticles(pool); // Runs in background
-  res.json({ message: "AI processing started in the background!" });
-});
-
-app.listen(PORT, () => {
-  console.log(`Backend API running on port ${PORT}`); 
-});
-
-
 // API Endpoint: Track User Activity (Clicks/Reads)
 app.post('/api/track-activity', async (req, res) => {
   try {
     const { userId, articleId, activityType } = req.body;
     
-    // Insert the interaction into the database
     await pool.execute(
       "INSERT INTO user_activity (user_id, article_id, activity_type, activity_time) VALUES (?, ?, ?, NOW())",
       [userId, articleId, activityType || 'click']
@@ -272,7 +245,6 @@ app.get('/api/news/personalized', async (req, res) => {
   try {
     const { region, userId } = req.query;
 
-    // 1. Identify the user's top 3 preferred categories
     const [preferences] = await pool.execute(`
       SELECT na.category, COUNT(*) as interaction_count
       FROM user_activity ua
@@ -283,10 +255,8 @@ app.get('/api/news/personalized', async (req, res) => {
       LIMIT 3
     `, [userId]);
 
-    // Extract just the category names into an array
     const preferredCategories = preferences.map(p => p.category);
 
-    // 2. Fetch the standard news feed (similar to your existing query)
     let sqlQuery = `
       SELECT 
         na.article_id AS id, 
@@ -297,7 +267,6 @@ app.get('/api/news/personalized', async (req, res) => {
         na.published_at AS time,
         r.region_name AS region,
         
-        -- Base Consensus Score
         (
           SELECT LEAST(100, ROUND(AVG(ns2.trust_weight) * 10 + (COUNT(DISTINCT na2.source_id) - 1) * 5))
           FROM news_article na2
@@ -305,11 +274,9 @@ app.get('/api/news/personalized', async (req, res) => {
           WHERE na2.event_id = na.event_id
         ) AS base_score,
 
-        -- Crowd Votes
         (SELECT COUNT(*) FROM user_activity ua WHERE ua.article_id = na.article_id AND ua.activity_type = 'vote_real') AS real_votes,
         (SELECT COUNT(*) FROM user_activity ua WHERE ua.article_id = na.article_id AND ua.activity_type = 'vote_fake') AS fake_votes,
 
-        -- Sources
         (
           SELECT GROUP_CONCAT(DISTINCT ns3.source_name SEPARATOR '||')
           FROM news_article na3
@@ -331,15 +298,13 @@ app.get('/api/news/personalized', async (req, res) => {
 
     const [rows] = await pool.execute(sqlQuery, queryParams);
 
-    // 3. THE ALGORITHM: Calculate Final Score + Personalization Boost
     let formattedData = rows.map(row => {
       let finalScore = row.base_score + (row.real_votes * 2) - (row.fake_votes * 5);
       finalScore = Math.max(0, Math.min(100, finalScore));
 
-      // Personalization Engine: Boost the sorting weight if it matches their preferences
       let personalSortWeight = finalScore; 
       if (preferredCategories.includes(row.category)) {
-        personalSortWeight += 50; // Huge boost to push it to the top of the feed
+        personalSortWeight += 50; 
       }
 
       return {
@@ -351,20 +316,42 @@ app.get('/api/news/personalized', async (req, res) => {
         region: row.region,
         category: row.category,
         score: finalScore,
-        sortWeight: personalSortWeight, // Hidden metric used just for sorting
+        sortWeight: personalSortWeight, 
         realVotes: row.real_votes,
         fakeVotes: row.fake_votes,
         time: new Date(row.time).toLocaleDateString()
       };
     });
 
-    // Sort by the personalized weight (highest first)
     formattedData.sort((a, b) => b.sortWeight - a.sortWeight);
 
-    res.json(formattedData.slice(0, 10)); // Return top 10 personalized articles
+    res.json(formattedData.slice(0, 10)); 
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Personalized feed generation failed' });
   }
 });
 
+
+// --- THE NEW MANUAL AI TRIGGER ENDPOINT ---
+app.post('/api/trigger-ai', async (req, res) => {
+  try {
+    // Await the function so the frontend knows exactly when it finishes
+    const count = await processNewArticles(pool);
+    
+    if (count === 0) {
+      res.json({ message: "Database is up to date! No new articles to process.", count: 0 });
+    } else {
+      res.json({ message: `Successfully processed ${count} articles with Gemini!`, count: count });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to process articles." });
+  }
+});
+
+const PORT = process.env.PORT || 5000; 
+
+app.listen(PORT, () => {
+  console.log(`Backend API running on port ${PORT}`); 
+});

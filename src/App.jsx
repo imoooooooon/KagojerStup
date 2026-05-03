@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import AdminDashboard from './AdminDashboard'; // Importing your new admin page
 
 // --- Icons (Inline SVGs to keep single-file and fast) ---
 const MapPinIcon = ({ className }) => (
@@ -44,25 +46,22 @@ const ThumbsDownIcon = ({ className }) => (
   </svg>
 );
 
-export default function App() {
+// WE RENAMED THIS FROM 'App' TO 'NewsFeed'
+function NewsFeed() {
   const [activeRegion, setActiveRegion] = useState("Dhaka");
   
   const [newsFeed, setNewsFeed] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // --- Authentication State ---
-  // Check local storage FIRST before setting user to null
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('kagojer_user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  // NEW: State for the password eye toggle
   const [showPassword, setShowPassword] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState("login"); // "login" or "signup"
-
-  // NEW: Track what the user has voted on in this session to prevent spam clicks
+  const [authMode, setAuthMode] = useState("login"); 
   const [localVotes, setLocalVotes] = useState({});
   
   // Form State
@@ -71,12 +70,10 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
 
-  // Fetch real database data when the component loads OR when activeRegion changes
   useEffect(() => {
     const fetchNews = async () => {
       setIsLoading(true);
       try {
-        // AUTOMATIC SWITCH: Use personalized endpoint if logged in, otherwise standard
         let endpoint = `https://kagojerstup.onrender.com/api/news?region=${activeRegion}`;
         
         if (currentUser && currentUser.userId) {
@@ -106,9 +103,8 @@ export default function App() {
     };
 
     fetchNews();
-  }, [activeRegion, currentUser]); // ADD currentUser to dependency array
+  }, [activeRegion, currentUser]); 
 
-  // --- Fetch User's Past Votes on Login/Refresh ---
   useEffect(() => {
     const fetchUserVotes = async () => {
       if (!currentUser) {
@@ -120,11 +116,8 @@ export default function App() {
         const response = await fetch(`https://kagojerstup.onrender.com/api/user-votes/${currentUser.userId}`);
         if (response.ok) {
           const pastVotes = await response.json();
-          console.log("🔥 Votes loaded from database:", pastVotes); // <-- This will prove it works!
           setLocalVotes(pastVotes); 
-        } else {
-          console.log("⏳ Waiting for Render to update...");
-        }
+        } 
       } catch (error) {
         console.error("Failed to load past votes:", error);
       }
@@ -133,7 +126,6 @@ export default function App() {
     fetchUserVotes();
   }, [currentUser]);
 
-  // --- Handle Authentication Submit ---
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError("");
@@ -162,7 +154,7 @@ export default function App() {
         setAuthPassword(""); 
       } else {
         setCurrentUser(data);
-        localStorage.setItem('kagojer_user', JSON.stringify(data)); // <-- ADD THIS LINE
+        localStorage.setItem('kagojer_user', JSON.stringify(data)); 
         setIsAuthModalOpen(false);
         setAuthEmail("");
         setAuthPassword("");
@@ -177,7 +169,6 @@ export default function App() {
     localStorage.removeItem('kagojer_user');
   };
 
-  // --- Voting System ---
   const handleVote = async (articleId, voteType) => {
     if (!currentUser) {
       setAuthMode("login");
@@ -187,9 +178,6 @@ export default function App() {
 
     const previousVote = localVotes[articleId];
 
-    // ----------------------------------------------------
-    // SCENARIO 1: UN-VOTING (Clicking the active button again)
-    // ----------------------------------------------------
     if (previousVote === voteType) {
       setNewsFeed(prevFeed => prevFeed.map(news => {
         if (news.id === articleId) {
@@ -209,14 +197,12 @@ export default function App() {
         return news;
       }));
 
-      // Clear the local memory so the button turns grey again
       setLocalVotes(prev => {
         const newState = { ...prev };
         delete newState[articleId]; 
         return newState;
       });
 
-      // Tell database to delete it
       try {
         await fetch('https://kagojerstup.onrender.com/api/remove-vote', {
           method: 'POST',
@@ -229,9 +215,6 @@ export default function App() {
       return; 
     }
 
-    // ----------------------------------------------------
-    // SCENARIO 2: NEW VOTE or CHANGING VOTE
-    // ----------------------------------------------------
     setNewsFeed(prevFeed => prevFeed.map(news => {
       if (news.id === articleId) {
         let newScore = news.score;
@@ -272,12 +255,10 @@ export default function App() {
     }
   };
 
-  // --- Track Article Clicks ---
   const handleArticleClick = async (articleId) => {
-    if (!currentUser) return; // Only track logged-in users
+    if (!currentUser) return; 
 
     try {
-      // Don't await this, let it run in the background so it doesn't slow down the user clicking the link
       fetch('https://kagojerstup.onrender.com/api/track-activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -464,7 +445,6 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-              {/* Connecting line for visual flow behind cards */}
               <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-blue-200 via-slate-200 to-slate-200 -z-10 transform -translate-y-1/2"></div>
 
               {/* Card 1: High Priority */}
@@ -634,7 +614,7 @@ export default function App() {
                           target="_blank" 
                           rel="noopener noreferrer" 
                           className="focus:outline-none"
-                          onClick={() => handleArticleClick(news.id)} // <-- ADD THIS LINE
+                          onClick={() => handleArticleClick(news.id)}
                         >
                           <span className="absolute inset-0" aria-hidden="true"></span>
                           {news.title}
@@ -665,8 +645,8 @@ export default function App() {
                             onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_real'); }}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors text-xs font-bold cursor-pointer border
                               ${localVotes[news.id] === 'vote_real' 
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-inner' // Active style
-                                : 'bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border-slate-200 hover:border-emerald-200' // Default style
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-inner' 
+                                : 'bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border-slate-200 hover:border-emerald-200' 
                               }`}
                             title="Mark as Real News"
                           >
@@ -677,8 +657,8 @@ export default function App() {
                             onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_fake'); }}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors text-xs font-bold cursor-pointer border
                               ${localVotes[news.id] === 'vote_fake' 
-                                ? 'bg-red-100 text-red-800 border-red-300 shadow-inner' // Active style
-                                : 'bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 border-slate-200 hover:border-red-200' // Default style
+                                ? 'bg-red-100 text-red-800 border-red-300 shadow-inner' 
+                                : 'bg-slate-50 hover:bg-red-50 text-slate-600 hover:text-red-700 border-slate-200 hover:border-red-200' 
                               }`}
                             title="Mark as Fake News"
                           >
@@ -841,5 +821,20 @@ export default function App() {
         )}
       </div>
     </>
+  );
+}
+
+// THIS IS OUR NEW ROUTER (It replaces the old 'export default function App')
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Your public homepage for regular users */}
+        <Route path="/" element={<NewsFeed />} />
+        
+        {/* The hidden route just for the Admin */}
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Routes>
+    </Router>
   );
 }

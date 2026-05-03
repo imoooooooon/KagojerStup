@@ -27,12 +27,10 @@ async function scrapeArticleText(url) {
   }
 }
 
-// 2. Function to ask Gemini to format it (THE FIX IS HERE)
+// 2. Function to ask Gemini to format it 
 async function analyzeWithGemini(articleText) {
-  // We use the standard flash model and remove the strict JSON config
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-  // We explicitly tell it NOT to use markdown blocks
   const prompt = `
     You are an expert news analyst. 
     Read the following article and extract the data strictly as a raw JSON object.
@@ -53,17 +51,15 @@ async function analyzeWithGemini(articleText) {
   const result = await model.generateContent(prompt);
   let rawText = result.response.text();
 
-  // Foolproof JSON Cleaner: 
-  // Just in case Gemini accidentally adds markdown code blocks anyway, 
-  // we strip them out before parsing so your app never crashes!
   rawText = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
 
   return JSON.parse(rawText);
 }
 
-// 3. The Main Execution Loop
+// 3. The Main Execution Loop (Updated for Frontend Button)
 export async function processNewArticles(pool) {
   console.log("🤖 Starting AI News Processor...");
+  let processedCount = 0; // Track successful updates
   
   try {
     const [unprocessedArticles] = await pool.execute(
@@ -77,9 +73,10 @@ export async function processNewArticles(pool) {
        LIMIT 5`
     );
 
+    // If database is clean, report back 0 immediately
     if (unprocessedArticles.length === 0) {
       console.log("✅ No new articles to process right now.");
-      return;
+      return 0; 
     }
 
     for (const article of unprocessedArticles) {
@@ -104,10 +101,15 @@ export async function processNewArticles(pool) {
       );
       
       console.log(`✅ Successfully updated database for article ${article.article_id}`);
+      processedCount++; // Increment our counter
       
       await new Promise(resolve => setTimeout(resolve, 3000)); 
     }
+    
+    return processedCount; // Return the final tally to the frontend
+    
   } catch (error) {
     console.error("Pipeline Error:", error);
+    throw error; // Pass the error back up to server.js
   }
 }
