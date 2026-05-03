@@ -31,7 +31,7 @@ async function scrapeArticleText(url) {
 // 2. Function to ask Gemini to format it
 async function analyzeWithGemini(articleText) {
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-1.5-pro-latest",
     generationConfig: { responseMimeType: "application/json" }
   });
 
