@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import AdminDashboard from './AdminDashboard';
+import AdminDashboard from './AdminDashboard'; 
 
 // --- Icons (Inline SVGs to keep single-file and fast) ---
 const MapPinIcon = ({ className }) => (
@@ -49,9 +49,12 @@ const ThumbsDownIcon = ({ className }) => (
 function NewsFeed() {
   const [activeRegion, setActiveRegion] = useState("Dhaka");
   
-  // New Filter States
+  // Filter States
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeSource, setActiveSource] = useState("All");
+  
+  // NEW: State to track which articles have their summaries expanded
+  const [expandedSummaries, setExpandedSummaries] = useState({});
   
   const [newsFeed, setNewsFeed] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,9 +100,10 @@ function NewsFeed() {
           setNewsFeed([]); 
         }
         
-        // Reset sub-filters when region changes
+        // Reset sub-filters and expanded states when region changes
         setActiveCategory("All");
         setActiveSource("All");
+        setExpandedSummaries({});
         setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch news:", error);
@@ -277,6 +281,14 @@ function NewsFeed() {
     } catch (error) {
       console.error("Failed to track click:", error);
     }
+  };
+
+  // NEW: Function to toggle the expanded state of a specific summary
+  const toggleSummary = (articleId) => {
+    setExpandedSummaries(prev => ({
+      ...prev,
+      [articleId]: !prev[articleId] // If it's true, make it false. If false/undefined, make it true.
+    }));
   };
 
   // --- Dynamic Options for Dropdowns ---
@@ -559,7 +571,25 @@ function NewsFeed() {
                         </a>
                       </h3>
                       
-                      <p className="text-sm text-[#64748B] mb-5 line-clamp-2 leading-relaxed">{news.summary}</p>
+                      {/* NEW: Toggleable AI Summary */}
+                      <div className="mb-5 relative z-10">
+                        <p className={`text-sm text-[#64748B] leading-relaxed transition-all duration-300 ${expandedSummaries[news.id] ? '' : 'line-clamp-2'}`}>
+                          {news.summary}
+                        </p>
+                        
+                        {/* Only show the button if there is an actual summary to expand */}
+                        {news.summary && news.summary.length > 100 && (
+                          <button 
+                            onClick={(e) => {
+                              e.preventDefault(); // Prevents the link click from firing
+                              toggleSummary(news.id);
+                            }}
+                            className="mt-2 text-xs font-bold text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <span>✨</span> {expandedSummaries[news.id] ? 'Hide Summary' : 'Read AI Summary'}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div>
