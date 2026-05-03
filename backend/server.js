@@ -91,7 +91,7 @@ app.get('/api/news', async (req, res) => {
         score: finalScore,
         realVotes: row.real_votes,
         fakeVotes: row.fake_votes,
-        time: new Date(row.time).toLocaleDateString(),
+        time: row.time, // <--- CHANGED THIS: Send the full raw time to the frontend
         distance: region === 'All' ? 'National' : 'Local Priority'
       };
     });
@@ -323,7 +323,7 @@ app.get('/api/news/personalized', async (req, res) => {
         sortWeight: personalSortWeight, 
         realVotes: row.real_votes,
         fakeVotes: row.fake_votes,
-        time: new Date(row.time).toLocaleDateString()
+        time: row.time // <--- CHANGED THIS: Send the full raw time to the frontend
       };
     });
 
