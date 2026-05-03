@@ -70,7 +70,9 @@ app.get('/api/news', async (req, res) => {
       sqlQuery += ` WHERE r.region_name = ? `;
       queryParams.push(region);
     }
-    sqlQuery += ` ORDER BY na.published_at DESC LIMIT 10`;
+    
+    // LIMIT REMOVED HERE
+    sqlQuery += ` ORDER BY na.published_at DESC`;
 
     const [rows] = await pool.execute(sqlQuery, queryParams);
 
@@ -294,7 +296,9 @@ app.get('/api/news/personalized', async (req, res) => {
       sqlQuery += ` WHERE r.region_name = ? `;
       queryParams.push(region);
     }
-    sqlQuery += ` ORDER BY na.published_at DESC LIMIT 20`;
+    
+    // LIMIT REMOVED HERE
+    sqlQuery += ` ORDER BY na.published_at DESC`;
 
     const [rows] = await pool.execute(sqlQuery, queryParams);
 
@@ -325,7 +329,8 @@ app.get('/api/news/personalized', async (req, res) => {
 
     formattedData.sort((a, b) => b.sortWeight - a.sortWeight);
 
-    res.json(formattedData.slice(0, 10)); 
+    // .slice() REMOVED HERE
+    res.json(formattedData); 
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Personalized feed generation failed' });

@@ -46,6 +46,22 @@ const ThumbsDownIcon = ({ className }) => (
   </svg>
 );
 
+// Helper function to format date and time
+const formatDateTime = (dateString) => {
+  if (!dateString) return "Unknown Date";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString; 
+  
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
 function NewsFeed() {
   const [activeRegion, setActiveRegion] = useState("Dhaka");
   
@@ -53,7 +69,7 @@ function NewsFeed() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeSource, setActiveSource] = useState("All");
   
-  // NEW: State to track which articles have their summaries expanded
+  // State to track which articles have their summaries expanded
   const [expandedSummaries, setExpandedSummaries] = useState({});
   
   const [newsFeed, setNewsFeed] = useState([]);
@@ -283,11 +299,11 @@ function NewsFeed() {
     }
   };
 
-  // NEW: Function to toggle the expanded state of a specific summary
+  // Function to toggle the expanded state of a specific summary
   const toggleSummary = (articleId) => {
     setExpandedSummaries(prev => ({
       ...prev,
-      [articleId]: !prev[articleId] // If it's true, make it false. If false/undefined, make it true.
+      [articleId]: !prev[articleId]
     }));
   };
 
@@ -539,7 +555,7 @@ function NewsFeed() {
                 </div>
               ) : (
                 filteredFeed.map((news) => (
-                  <article key={news.id} className="bg-white border border-[#E2E8F0] rounded-xl p-6 hover:border-[#2563EB] hover:shadow-lg transition-all flex flex-col justify-between">
+                  <article key={news.id} className="bg-white border border-[#E2E8F0] rounded-xl p-6 hover:border-[#2563EB] hover:shadow-lg transition-all flex flex-col justify-between h-fit">
                     <div>
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex gap-2 items-center flex-wrap">
@@ -571,7 +587,7 @@ function NewsFeed() {
                         </a>
                       </h3>
                       
-                      {/* NEW: Toggleable AI Summary */}
+                      {/* Toggleable AI Summary */}
                       <div className="mb-5 relative z-10">
                         <p className={`text-sm text-[#64748B] leading-relaxed transition-all duration-300 ${expandedSummaries[news.id] ? '' : 'line-clamp-2'}`}>
                           {news.summary}
@@ -581,7 +597,7 @@ function NewsFeed() {
                         {news.summary && news.summary.length > 100 && (
                           <button 
                             onClick={(e) => {
-                              e.preventDefault(); // Prevents the link click from firing
+                              e.preventDefault(); 
                               toggleSummary(news.id);
                             }}
                             className="mt-2 text-xs font-bold text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -608,9 +624,10 @@ function NewsFeed() {
                       </div>
                       
                       {/* Interaction Footer: Time & Voting */}
-                      <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4 relative z-10">
-                        <div className="flex items-center gap-1 text-xs text-slate-500 font-medium">
-                          <ClockIcon className="w-3.5 h-3.5" /> Published {news.time}
+                      <div className="pt-4 border-t border-slate-100 flex flex-col xl:flex-row justify-between xl:items-center gap-4 relative z-10">
+                        <div className="flex items-center gap-1 text-xs text-slate-500 font-medium whitespace-nowrap">
+                          {/* UPDATED DATE/TIME FORMATTING HERE */}
+                          <ClockIcon className="w-3.5 h-3.5" /> {formatDateTime(news.time)}
                         </div>
                         
                         {/* Crowd Voting Buttons */}
