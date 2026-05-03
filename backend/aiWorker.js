@@ -5,16 +5,15 @@ import 'dotenv/config';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// 1. Function to read the website (NOW WITH BROWSER DISGUISE)
+// 1. Function to read the website
 async function scrapeArticleText(url) {
   try {
-    // We add headers so Prothom Alo and Daily Star think we are a real human on Chrome
     const { data } = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
       },
-      timeout: 10000 // 10 second timeout so it doesn't freeze
+      timeout: 10000 
     });
     
     const $ = cheerio.load(data);
@@ -24,20 +23,20 @@ async function scrapeArticleText(url) {
     return text.substring(0, 5000); 
   } catch (error) {
     console.error(`❌ Failed to scrape ${url}:`, error.message);
-    return null; // If blocked, return null so we don't crash
+    return null; 
   }
 }
 
-// 2. Function to ask Gemini to format it
+// 2. Function to ask Gemini to format it (THE FIX IS HERE)
 async function analyzeWithGemini(articleText) {
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-pro-latest",
-    generationConfig: { responseMimeType: "application/json" }
-  });
+  // We use the standard flash model and remove the strict JSON config
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+  // We explicitly tell it NOT to use markdown blocks
   const prompt = `
     You are an expert news analyst. 
-    Read the following article and extract the data strictly as JSON.
+    Read the following article and extract the data strictly as a raw JSON object.
+    Do NOT wrap the response in markdown blocks (like \`\`\`json). Just output the raw JSON data.
     
     Format:
     {
@@ -52,7 +51,14 @@ async function analyzeWithGemini(articleText) {
   `;
 
   const result = await model.generateContent(prompt);
-  return JSON.parse(result.response.text());
+  let rawText = result.response.text();
+
+  // Foolproof JSON Cleaner: 
+  // Just in case Gemini accidentally adds markdown code blocks anyway, 
+  // we strip them out before parsing so your app never crashes!
+  rawText = rawText.replace(/```json/gi, '').replace(/```/gi, '').trim();
+
+  return JSON.parse(rawText);
 }
 
 // 3. The Main Execution Loop
@@ -60,7 +66,6 @@ export async function processNewArticles(pool) {
   console.log("🤖 Starting AI News Processor...");
   
   try {
-    // THE FIX: Updated SQL query to catch 'Auto-generated description' and the massive text dumps
     const [unprocessedArticles] = await pool.execute(
       `SELECT article_id, article_url 
        FROM news_article 
@@ -68,7 +73,7 @@ export async function processNewArticles(pool) {
           OR summary = 'Click to read more.'
           OR summary = 'Auto-generated description'
           OR LENGTH(summary) < 25 
-          OR LENGTH(summary) > 500 -- Catches the articles where the full text was accidentally dumped into the summary
+          OR LENGTH(summary) > 500
        LIMIT 5`
     );
 
@@ -82,7 +87,6 @@ export async function processNewArticles(pool) {
       
       const rawText = await scrapeArticleText(article.article_url);
       
-      // If the scraper failed (blocked), we skip it so we don't send empty text to Gemini
       if (!rawText || rawText.trim() === '') {
           console.log(`⚠️ Could not extract text for ID ${article.article_id}. Skipping.`);
           continue; 
@@ -92,7 +96,6 @@ export async function processNewArticles(pool) {
       const aiData = await analyzeWithGemini(rawText);
       console.log("✨ Gemini Output:", aiData);
 
-      // C. Update the database with the AI's JSON data
       await pool.execute(
         `UPDATE news_article 
          SET title = ?, summary = ?, category = ? 
@@ -102,7 +105,6 @@ export async function processNewArticles(pool) {
       
       console.log(`✅ Successfully updated database for article ${article.article_id}`);
       
-      // Wait 3 seconds to respect Gemini's free tier rate limits
       await new Promise(resolve => setTimeout(resolve, 3000)); 
     }
   } catch (error) {
