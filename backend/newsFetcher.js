@@ -2,7 +2,7 @@ import cron from 'node-cron';
 
 export const startNewsFetcher = (pool) => {
   
-  cron.schedule('*/30 * * * *', async () => {
+  cron.schedule('* * * * *', async () => {
     console.log('🔄 [CRON] Starting 30-minute news fetch cycle using rss2json...');
 
     try {
