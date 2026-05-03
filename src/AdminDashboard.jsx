@@ -23,7 +23,7 @@ export default function AdminDashboard() {
 
     try {
       // Calling your new dedicated backend route
-      const response = await fetch('http://localhost:5000/api/trigger-ai', {
+      const response = await fetch('https://kagojerstup.onrender.com/api/trigger-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
