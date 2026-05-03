@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import AdminDashboard from './AdminDashboard'; // Importing your new admin page
+import AdminDashboard from './AdminDashboard';
 
 // --- Icons (Inline SVGs to keep single-file and fast) ---
 const MapPinIcon = ({ className }) => (
@@ -46,9 +46,12 @@ const ThumbsDownIcon = ({ className }) => (
   </svg>
 );
 
-// WE RENAMED THIS FROM 'App' TO 'NewsFeed'
 function NewsFeed() {
   const [activeRegion, setActiveRegion] = useState("Dhaka");
+  
+  // New Filter States
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeSource, setActiveSource] = useState("All");
   
   const [newsFeed, setNewsFeed] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,6 +97,9 @@ function NewsFeed() {
           setNewsFeed([]); 
         }
         
+        // Reset sub-filters when region changes
+        setActiveCategory("All");
+        setActiveSource("All");
         setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch news:", error);
@@ -273,6 +279,17 @@ function NewsFeed() {
     }
   };
 
+  // --- Dynamic Options for Dropdowns ---
+  const uniqueCategories = ["All", ...new Set(newsFeed.map(item => item.category).filter(Boolean))];
+  const uniqueSources = ["All", ...new Set(newsFeed.flatMap(item => item.sources).filter(Boolean))];
+
+  // --- Applied Filters ---
+  const filteredFeed = newsFeed.filter(news => {
+    const matchCategory = activeCategory === 'All' || news.category === activeCategory;
+    const matchSource = activeSource === 'All' || news.sources.includes(activeSource);
+    return matchCategory && matchSource;
+  });
+
   return (
     <>
       <style dangerouslySetInnerHTML={{__html: `
@@ -301,9 +318,9 @@ function NewsFeed() {
               </div>
               <div className="hidden md:flex space-x-8">
                 <a href="#" className="text-[#0F172A] font-medium hover:text-[#2563EB] transition-colors">Home</a>
+                <a href="#live-feed" className="text-[#64748B] font-medium hover:text-[#2563EB] transition-colors">Live Feed</a>
                 <a href="#geo-ranking" className="text-[#64748B] font-medium hover:text-[#2563EB] transition-colors">Local News</a>
                 <a href="#credibility" className="text-[#64748B] font-medium hover:text-[#2563EB] transition-colors">Credibility</a>
-                <a href="#live-feed" className="text-[#64748B] font-medium hover:text-[#2563EB] transition-colors">Live Feed</a>
               </div>
               <div className="flex items-center gap-4">
                 {currentUser ? (
@@ -435,10 +452,58 @@ function NewsFeed() {
         {/* Feature 3: Live News Preview */}
         <section id="live-feed" className="py-20 bg-[#F8FAFC] border-t border-[#E2E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row justify-between items-end mb-10 gap-4">
+            
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 gap-6">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#0F172A] mb-2">Live News Stream</h2>
                 <p className="text-[#64748B]">Ranked for: <strong className="text-[#0F172A]">{activeRegion === 'All' ? 'Bangladesh (National)' : activeRegion}</strong></p>
+              </div>
+              
+              {/* Filter Dropdowns */}
+              <div className="flex flex-wrap gap-3 w-full lg:w-auto">
+                <select 
+                  value={activeRegion}
+                  onChange={(e) => setActiveRegion(e.target.value)}
+                  className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
+                >
+                  <option value="All">All Locations</option>
+                  <option value="Dhaka">Dhaka</option>
+                  <option value="Chattogram">Chattogram</option>
+                  <option value="Sylhet">Sylhet</option>
+                  <option value="Sunamganj">Sunamganj</option>
+                  <option value="Narsingdi">Narsingdi</option>
+                  <option value="Narayanganj">Narayanganj</option>
+                  <option value="Banani">Banani</option>
+                  <option value="Mirpur">Mirpur</option>
+                  <option value="Cox's Bazar">Cox's Bazar</option>
+                  <option value="Netrokona">Netrokona</option>
+                  <option value="Gaibandha">Gaibandha</option>
+                  <option value="Keraniganj">Keraniganj</option>
+                </select>
+
+                <select 
+                  value={activeCategory}
+                  onChange={(e) => setActiveCategory(e.target.value)}
+                  className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
+                >
+                  {uniqueCategories.map(category => (
+                    <option key={category} value={category}>
+                      {category === 'All' ? 'All Categories' : category}
+                    </option>
+                  ))}
+                </select>
+
+                <select 
+                  value={activeSource}
+                  onChange={(e) => setActiveSource(e.target.value)}
+                  className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
+                >
+                  {uniqueSources.map(source => (
+                    <option key={source} value={source}>
+                      {source === 'All' ? 'All Portals' : source}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -448,12 +513,20 @@ function NewsFeed() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div>
                   <span className="ml-3 text-[#64748B] font-medium">Querying database...</span>
                 </div>
-              ) : newsFeed.length === 0 ? (
-                <div className="col-span-full py-12 text-center">
-                  <p className="text-[#64748B] text-lg font-medium">No recent news events found for {activeRegion}.</p>
+              ) : filteredFeed.length === 0 ? (
+                <div className="col-span-full py-12 text-center bg-white border border-[#E2E8F0] rounded-xl">
+                  <p className="text-[#64748B] text-lg font-medium">No articles found matching your filters for {activeRegion}.</p>
+                  {(activeCategory !== 'All' || activeSource !== 'All') && (
+                    <button 
+                      onClick={() => {setActiveCategory('All'); setActiveSource('All');}} 
+                      className="mt-4 text-[#2563EB] font-semibold hover:underline focus:outline-none"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
                 </div>
               ) : (
-                newsFeed.map((news) => (
+                filteredFeed.map((news) => (
                   <article key={news.id} className="bg-white border border-[#E2E8F0] rounded-xl p-6 hover:border-[#2563EB] hover:shadow-lg transition-all flex flex-col justify-between">
                     <div>
                       <div className="flex justify-between items-start mb-4">
@@ -493,7 +566,14 @@ function NewsFeed() {
                       <div className="flex flex-wrap items-center gap-2 mb-4">
                         <span className="text-xs text-slate-500 font-medium">Sources:</span>
                         {news.sources.map((source, idx) => (
-                          <span key={idx} className="text-xs font-semibold text-[#0F172A] bg-slate-100 px-2 py-0.5 rounded">{source}</span>
+                          <button 
+                            key={idx} 
+                            onClick={() => setActiveSource(source)}
+                            className="text-xs font-semibold text-[#0F172A] bg-slate-100 hover:bg-blue-100 hover:text-blue-700 px-2 py-0.5 rounded transition-colors cursor-pointer relative z-10"
+                            title={`Filter by ${source}`}
+                          >
+                            {source}
+                          </button>
                         ))}
                       </div>
                       
@@ -594,13 +674,13 @@ function NewsFeed() {
         </section>
 
         {/* Feature 2: Source Credibility Scoring */}
-        <section id="credibility" className="py-20 bg-white">
+        <section id="credibility" className="py-20 bg-[#F8FAFC]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row items-center gap-16">
               
               <div className="w-full lg:w-1/2 order-2 lg:order-1">
                 {/* Visual DB Node Representation */}
-                <div className="bg-[#F8FAFC] rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
+                <div className="bg-white rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
                   
                   {/* Event Node */}
                   <div className="absolute z-10 bg-white border-2 border-[#2563EB] rounded-xl p-4 shadow-lg w-48 text-center text-sm font-bold text-[#0F172A]">
@@ -673,8 +753,6 @@ function NewsFeed() {
             </div>
           </div>
         </section>
-
-        
 
         {/* How It Works */}
         <section className="py-20 bg-white">
