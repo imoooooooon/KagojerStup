@@ -297,7 +297,7 @@ function NewsFeed() {
   const [trendingWindow, setTrendingWindow] = useState("24h");
   const [isTrendingLoading, setIsTrendingLoading] = useState(true);
 
-  // NEW: Personalized Feed State
+  // Personalized Feed State
   const [personalizedFeed, setPersonalizedFeed] = useState([]);
   const [isPersonalizedLoading, setIsPersonalizedLoading] = useState(false);
 
@@ -330,15 +330,13 @@ function NewsFeed() {
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
 
-  // Initial Data Fetching
+  // Initial Data Fetching (Main Feed)
   useEffect(() => {
     const fetchNews = async () => {
       setIsLoading(true);
       try {
-        let endpoint = `https://kagojerstup.onrender.com/api/news?region=${activeRegion}`;
-        if (currentUser && currentUser.userId) {
-           endpoint = `https://kagojerstup.onrender.com/api/news/personalized?region=${activeRegion}&userId=${currentUser.userId}`;
-        }
+        // ALWAYS fetch all regional news so the dropdown filters get every portal!
+        const endpoint = `https://kagojerstup.onrender.com/api/news?region=${activeRegion}`;
         const response = await fetch(endpoint);
         const data = await response.json();
         setNewsFeed(Array.isArray(data) ? data : []);
@@ -387,9 +385,9 @@ function NewsFeed() {
       }
     };
     fetchMapData();
-  }, [activeRegion, currentUser, articleId]); 
+  }, [activeRegion, articleId]); // Removed currentUser from dependencies to prevent filter bug
 
-  // NEW: Fetch Personalized Feed 
+  // Fetch Personalized Feed 
   useEffect(() => {
     if (!currentUser) {
       setPersonalizedFeed([]);
@@ -775,37 +773,10 @@ function NewsFeed() {
   // ==========================================
   // HELPER: RENDER NEWS CARD
   // ==========================================
-  const renderNewsCard = (news, isHighlighted = false, rank = null, compact = false) => {
+  const renderNewsCard = (news, isHighlighted = false, rank = null) => {
     const articleId = news.id || news.article_id;
     const isBookmarked = bookmarkedArticleIds.includes(articleId);
 
-    // --- NEW: COMPACT CARD FOR HORIZONTAL SCROLLING ---
-    if (compact) {
-      return (
-        <article key={articleId} className="bg-white border border-[#E2E8F0] rounded-2xl p-5 hover:border-[#2563EB] hover:shadow-lg transition-all flex flex-col justify-between w-80 flex-shrink-0 snap-center">
-          <div className="flex justify-between items-start mb-3 gap-2">
-            <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{news.category}</span>
-            <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${news.score >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : news.score >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-red-50 text-red-800 border-red-200'}`}>
-              <ShieldCheckIcon className="w-3 h-3" /> {news.score}%
-            </div>
-          </div>
-          <h3 className="text-sm font-bold text-[#0F172A] mb-2 hover:text-[#2563EB] transition-colors leading-snug line-clamp-3">
-            <a href={news.url || news.article_url || "#"} target="_blank" rel="noopener noreferrer" onClick={() => handleArticleClick(articleId)}>{news.title}</a>
-          </h3>
-          <p className="text-xs text-[#64748B] line-clamp-2 mb-4">{translatedArticles[articleId] && news.translation ? news.translation : news.summary}</p>
-          <div className="mt-auto pt-3 border-t border-[#E2E8F0] flex justify-between items-center gap-2">
-             <span className="text-[10px] font-bold text-slate-500 truncate max-w-[100px]">{news.sources ? news.sources[0] : news.source_name}</span>
-             <div className="flex gap-1">
-                <button onClick={() => handleBookmark(articleId)} className={`p-1.5 rounded-full border transition-colors ${isBookmarked ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-white text-slate-400 border-[#E2E8F0] hover:text-blue-500 hover:bg-blue-50'}`}>
-                  {isBookmarked ? <BookmarkSolidIcon className="w-3 h-3"/> : <BookmarkOutlineIcon className="w-3 h-3"/>}
-                </button>
-             </div>
-          </div>
-        </article>
-      );
-    }
-
-    // --- STANDARD FULL-SIZE CARD ---
     return (
       <article key={articleId} className={`bg-white border rounded-2xl p-6 transition-all flex flex-col justify-between h-full relative overflow-hidden group
         ${isHighlighted ? 'border-blue-500 shadow-xl shadow-blue-900/10 ring-2 ring-blue-200 mb-8' : 'border-[#E2E8F0] hover:border-[#2563EB] hover:shadow-lg'}
@@ -955,7 +926,6 @@ function NewsFeed() {
     );
   };
 
-  // --- THE FIX: Restored the missing category variables ---
   const uniqueCategories = ["All", ...new Set(newsFeed.map(item => item.category).filter(Boolean))];
   const uniqueSources = ["All", ...new Set(newsFeed.flatMap(item => item.sources || []).filter(Boolean))];
 
@@ -981,10 +951,6 @@ function NewsFeed() {
         @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
         body { font-family: 'Plus Jakarta Sans', 'Hind Siliguri', sans-serif; scroll-behavior: smooth; }
         
-        /* Hide scrollbar for horizontal scrolling but allow scroll */
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
         .map-sidebar::-webkit-scrollbar { width: 6px; }
         .map-sidebar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
         .map-sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
@@ -1033,14 +999,12 @@ function NewsFeed() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               
-              {/* THE FIX: Fixed Home Button Routing */}
               <Link to="/" onClick={() => window.scrollTo(0,0)} className="flex items-center gap-2 cursor-pointer group">
                 <div className="w-8 h-8 rounded bg-[#2563EB] text-white flex items-center justify-center font-bold text-lg group-hover:bg-blue-700 transition-colors">ক</div>
                 <span className="font-bold text-xl tracking-tight group-hover:text-[#2563EB] transition-colors">কাগজের স্তূপ</span>
               </Link>
               
               <div className="hidden md:flex space-x-8">
-                {/* THE FIX: Added Live Feed back and fixed Home Button */}
                 <Link to="/" onClick={() => window.scrollTo(0,0)} className="text-[#0F172A] font-medium hover:text-[#2563EB]">Home</Link>
                 <a href="/#trending" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><TrendingIcon className="w-4 h-4"/> Trending</a>
                 <a href="/#live-feed" className="text-[#64748B] font-medium hover:text-[#2563EB]">Live Feed</a>
@@ -1271,10 +1235,8 @@ function NewsFeed() {
                 </div>
               ) : (
                 <>
-                  {/* Highlighted Shared Article */}
                   {highlightedArticle && renderNewsCard(highlightedArticle, true)}
 
-                  {/* Feed Body */}
                   {filteredFeed.length === 0 && !highlightedArticle ? (
                     <div className="col-span-full py-12 text-center bg-slate-50 border border-[#E2E8F0] rounded-xl">
                       <p className="text-[#64748B] text-lg font-medium">No articles found matching your filters.</p>
@@ -1618,11 +1580,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<NewsFeed />} />
-        
-        {/* Share Link Route (Highlights specific article) */}
         <Route path="/news/:articleId" element={<NewsFeed />} />
-        
-        {/* User Dashboard Route */}
         <Route path="/profile" element={
           <div className="min-h-screen bg-[#F8FAFC]">
             <nav className="sticky top-0 z-40 w-full bg-white border-b border-[#E2E8F0]">
@@ -1637,7 +1595,6 @@ export default function App() {
             <UserProfile currentUser={currentUser} handleLogout={handleLogout} />
           </div>
         } />
-
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </Router>
