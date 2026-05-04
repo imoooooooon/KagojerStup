@@ -45,6 +45,16 @@ const userLocationIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Custom Green Icon for User's Live Location
+const userLocationIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 >>>>>>> 75280cb1906eabf107b6f8afb1e9362567bf645a
 // --- Icons ---
 const MapPinIcon = ({ className }) => (
@@ -119,11 +129,8 @@ function NewsFeed() {
   const [isLocating, setIsLocating] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [mapCrises, setMapCrises] = useState([]);
-<<<<<<< HEAD
-=======
-  const [mapNews, setMapNews] = useState([]); 
-  const [selectedRegionForSidebar, setSelectedRegionForSidebar] = useState(null); 
->>>>>>> 75280cb1906eabf107b6f8afb1e9362567bf645a
+  const [mapNews, setMapNews] = useState([]); // Array of grouped articles by region
+  const [selectedRegionForSidebar, setSelectedRegionForSidebar] = useState(null); // The region currently clicked on map
   
   const [expandedSummaries, setExpandedSummaries] = useState({});
   const [newsFeed, setNewsFeed] = useState([]);
@@ -759,31 +766,7 @@ function NewsFeed() {
                   <AlertTriangleIcon className="w-6 h-6 text-red-600" />
                   <h2 className="text-3xl font-extrabold text-[#0F172A]">Live Crisis Map</h2>
                 </div>
-<<<<<<< HEAD
-                <p className="text-[#64748B]">Real-time physical locations of major events extracted from validated news sources.</p>
-              </div>
-            </div>
-
-            <div className="h-[500px] w-full rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-md relative z-10">
-              <MapContainer 
-                center={[23.6850, 90.3563]} // Center of Bangladesh
-                zoom={7} 
-                scrollWheelZoom={false}
-                style={{ height: "100%", width: "100%", zIndex: 1 }}
-              >
-                <TileLayer
-                  attribution='&copy; OpenStreetMap'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                
-                {/* Draw active crises on map */}
-                {mapCrises.map((crisis) => (
-                  <React.Fragment key={crisis.crisis_id}>
-                    <Marker position={[crisis.latitude, crisis.longitude]} icon={crisisIcon}>
-=======
-                <p className="text-[#64748B]">
-                  Click on a <strong className="text-blue-600">blue pin</strong> for breaking news, a <strong className="text-red-600">red pin</strong> for active crises, and see the <strong className="text-emerald-600">green pin</strong> for your live location.
-                </p>
+                <p className="text-[#64748B]">Click on a <strong className="text-blue-600">blue pin</strong> to see breaking news, or a <strong className="text-red-600">red pin</strong> for active crises.</p>
               </div>
             </div>
 
