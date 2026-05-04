@@ -93,6 +93,12 @@ const AlertTriangleIcon = ({ className }) => (
   </svg>
 );
 
+const TrendingIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+  </svg>
+);
+
 const formatDateTime = (dateString) => {
   if (!dateString) return "Unknown Date";
   const date = new Date(dateString);
@@ -108,9 +114,9 @@ function NewsFeed() {
   // Filter States
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeSource, setActiveSource] = useState("All");
-  const [searchQuery, setSearchQuery] = useState(""); // NEW: Search state
+  const [searchQuery, setSearchQuery] = useState(""); 
   
-  // Alert & Map State (Feature 6 & 8)
+  // Alert & Map State
   const [activeAlert, setActiveAlert] = useState(null); 
   const [localCrisisAlert, setLocalCrisisAlert] = useState(null); 
   const [isLocating, setIsLocating] = useState(false);
@@ -120,11 +126,16 @@ function NewsFeed() {
   const [mapNews, setMapNews] = useState([]); 
   const [selectedRegionForSidebar, setSelectedRegionForSidebar] = useState(null); 
   
+  // Trending State (Feature 5)
+  const [trendingNews, setTrendingNews] = useState([]);
+  const [trendingWindow, setTrendingWindow] = useState("24h");
+  const [isTrendingLoading, setIsTrendingLoading] = useState(true);
+
   const [expandedSummaries, setExpandedSummaries] = useState({});
   const [newsFeed, setNewsFeed] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Authentication State
+  // Auth State
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('kagojer_user');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -156,7 +167,7 @@ function NewsFeed() {
         
         setActiveCategory("All");
         setActiveSource("All");
-        setSearchQuery(""); // Clear search when switching regions
+        setSearchQuery(""); 
         setExpandedSummaries({});
         setIsLoading(false);
       } catch (error) {
@@ -166,7 +177,6 @@ function NewsFeed() {
     };
     fetchNews();
 
-    // Fetch Map Data (Crises AND standard Breaking News)
     const fetchMapData = async () => {
       try {
         const crisesRes = await fetch('https://kagojerstup.onrender.com/api/crises');
@@ -181,7 +191,24 @@ function NewsFeed() {
     fetchMapData();
   }, [activeRegion, currentUser]); 
 
-  // Passive alerts based on region dropdown
+  // Fetch Trending News (Feature 5)
+  useEffect(() => {
+    const fetchTrending = async () => {
+      setIsTrendingLoading(true);
+      try {
+        const response = await fetch(`https://kagojerstup.onrender.com/api/trending-news?window=${trendingWindow}`);
+        const data = await response.json();
+        setTrendingNews(data);
+      } catch (error) {
+        console.error("Failed to fetch trending news:", error);
+      } finally {
+        setIsTrendingLoading(false);
+      }
+    };
+    fetchTrending();
+  }, [trendingWindow]);
+
+  // Passive alerts based on region
   useEffect(() => {
     const checkAlerts = async () => {
       if (activeRegion === 'All') {
@@ -226,10 +253,15 @@ function NewsFeed() {
     e.preventDefault();
     setAuthError("");
     const endpoint = authMode === "login" ? "/api/login" : "/api/signup";
-    const payload = authMode === "login" ? { email: authEmail, password: authPassword } : { name: authName, email: authEmail, password: authPassword };
+    const payload = authMode === "login" 
+      ? { email: authEmail, password: authPassword } 
+      : { name: authName, email: authEmail, password: authPassword };
+      
     try {
       const response = await fetch(`https://kagojerstup.onrender.com${endpoint}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(payload)
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Authentication failed");
@@ -278,7 +310,9 @@ function NewsFeed() {
       setLocalVotes(prev => { const newState = { ...prev }; delete newState[articleId]; return newState; });
       try {
         await fetch('https://kagojerstup.onrender.com/api/remove-vote', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUser.userId, articleId })
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ userId: currentUser.userId, articleId })
         });
       } catch (error) { console.error("Failed to remove vote:", error); }
       return; 
@@ -301,19 +335,22 @@ function NewsFeed() {
     setLocalVotes(prev => ({ ...prev, [articleId]: voteType }));
     try {
       await fetch('https://kagojerstup.onrender.com/api/vote', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUser.userId, articleId, voteType })
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ userId: currentUser.userId, articleId, voteType })
       });
     } catch (error) { console.error("Voting failed:", error); }
   };
 
-  const handleArticleClick = async (articleId) => {
+  const handleArticleActivity = async (articleId, type) => {
     if (!currentUser) return; 
     try {
-      fetch('https://kagojerstup.onrender.com/api/track-activity', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.userId, articleId: articleId, activityType: 'click' })
+      await fetch('https://kagojerstup.onrender.com/api/track-activity', {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.userId, articleId: articleId, activityType: type })
       });
-    } catch (error) { console.error("Failed to track click:", error); }
+    } catch (error) { console.error("Failed to track activity:", error); }
   };
 
   const handleLiveLocation = () => {
@@ -331,7 +368,6 @@ function NewsFeed() {
         const lon = position.coords.longitude;
         setUserLocation({ lat, lng: lon });
 
-        // 1. Check for Active Crisis near User
         const alertRes = await fetch('https://kagojerstup.onrender.com/api/check-crisis-alert', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -344,7 +380,6 @@ function NewsFeed() {
           setLocalCrisisAlert(null); 
         }
         
-        // 2. Reverse-geocode to get the city name
         const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
         const data = await response.json();
         const city = data.city || data.locality || "Dhaka"; 
@@ -371,16 +406,24 @@ function NewsFeed() {
   const handleFollowToggle = async (sourceName) => {
     if (!currentUser) { setAuthMode("login"); setIsAuthModalOpen(true); return; }
     const isCurrentlyFollowing = followedSources.includes(sourceName);
-    if (isCurrentlyFollowing) { setFollowedSources(prev => prev.filter(s => s !== sourceName)); } 
-    else { setFollowedSources(prev => [...prev, sourceName]); }
+    if (isCurrentlyFollowing) {
+      setFollowedSources(prev => prev.filter(s => s !== sourceName));
+    } else {
+      setFollowedSources(prev => [...prev, sourceName]);
+    }
 
     try {
       await fetch('https://kagojerstup.onrender.com/api/follow-source', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUser.userId, sourceName })
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ userId: currentUser.userId, sourceName })
       });
     } catch (error) {
-      if (isCurrentlyFollowing) { setFollowedSources(prev => [...prev, sourceName]); } 
-      else { setFollowedSources(prev => prev.filter(s => s !== sourceName)); }
+      if (isCurrentlyFollowing) {
+        setFollowedSources(prev => [...prev, sourceName]);
+      } else {
+        setFollowedSources(prev => prev.filter(s => s !== sourceName));
+      }
     }
   };
 
@@ -391,12 +434,10 @@ function NewsFeed() {
   const uniqueCategories = ["All", ...new Set(newsFeed.map(item => item.category).filter(Boolean))];
   const uniqueSources = ["All", ...new Set(newsFeed.flatMap(item => item.sources).filter(Boolean))];
 
-  // --- NEW: Filter Logic (includes search query) ---
   const filteredFeed = newsFeed.filter(news => {
     const matchCategory = activeCategory === 'All' || news.category === activeCategory;
     const matchSource = activeSource === 'All' || news.sources.includes(activeSource);
     
-    // Check if the search query matches the title or the summary
     const query = searchQuery.toLowerCase();
     const matchSearch = searchQuery === "" || 
       (news.title && news.title.toLowerCase().includes(query)) || 
@@ -410,9 +451,8 @@ function NewsFeed() {
       <style dangerouslySetInnerHTML={{__html: `
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
-        body { font-family: 'Plus Jakarta Sans', 'Hind Siliguri', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', 'Hind Siliguri', sans-serif; scroll-behavior: smooth; }
         
-        /* Map Sidebar Custom Scrollbar */
         .map-sidebar::-webkit-scrollbar { width: 6px; }
         .map-sidebar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
         .map-sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
@@ -469,6 +509,7 @@ function NewsFeed() {
               </div>
               <div className="hidden md:flex space-x-8">
                 <a href="#" className="text-[#0F172A] font-medium hover:text-[#2563EB]">Home</a>
+                <a href="#trending" className="text-[#0F172A] font-medium hover:text-[#2563EB] flex items-center gap-1"><TrendingIcon className="w-4 h-4"/> Trending</a>
                 <a href="#live-feed" className="text-[#64748B] font-medium hover:text-[#2563EB]">Live Feed</a>
                 <a href="#news-map" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><MapPinIcon className="w-4 h-4"/> Global Map</a>
               </div>
@@ -511,7 +552,6 @@ function NewsFeed() {
                   Stop scrolling through global noise. Get instantly ranked news based on your location, verified by cross-referencing multiple trusted sources for uncompromised credibility.
                 </p>
                 
-                {/* Location Input & CTAs */}
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row gap-3 max-w-lg">
                     <div className="relative flex-grow group">
@@ -522,7 +562,6 @@ function NewsFeed() {
                         value={activeRegion}
                         onChange={(e) => setActiveRegion(e.target.value)}
                         className="block w-full pl-10 pr-12 py-3 border border-[#E2E8F0] rounded-lg leading-5 bg-[#F8FAFC] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] focus:bg-white transition-all sm:text-sm font-medium appearance-none cursor-pointer"
-                        aria-label="Your location"
                       >
                         <option value="All">All Bangladesh</option>
                         <option value="Dhaka">Dhaka</option>
@@ -547,19 +586,13 @@ function NewsFeed() {
                         {isLocating ? '...' : '📍'}
                       </button>
                     </div>
-                    <a href="#live-feed" className="flex-shrink-0 bg-[#2563EB] hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-md shadow-blue-200 focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 flex justify-center items-center gap-2">
+                    <a href="#live-feed" className="flex-shrink-0 bg-[#2563EB] hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-md shadow-blue-200 flex justify-center items-center gap-2">
                       <SearchIcon className="w-5 h-5" /> Explore Local News
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm font-medium">
-                    <a href="#credibility" className="text-[#64748B] hover:text-[#0F172A] transition-colors flex items-center gap-1">
-                      <ShieldCheckIcon className="w-4 h-4" /> Learn how we score credibility
                     </a>
                   </div>
                 </div>
               </div>
 
-              {/* Hero Visual Preview */}
               <div className="w-full lg:w-1/2 relative hidden lg:block">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-100 to-emerald-100 rounded-2xl blur-xl opacity-50"></div>
                 <div className="relative bg-white border border-[#E2E8F0] rounded-2xl shadow-xl overflow-hidden p-6 hover:shadow-2xl transition-shadow duration-500">
@@ -577,21 +610,117 @@ function NewsFeed() {
                   <p className="text-[#64748B] mb-6 line-clamp-2">
                     Authorities announce extended night operations for Line 6 starting next month to accommodate growing commuter demand in the capital, following multiple successful trials.
                   </p>
-                  <div className="pt-4 border-t border-[#E2E8F0] flex justify-between items-center">
-                    <div className="flex -space-x-2">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-600">DS</div>
-                      <div className="w-8 h-8 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-700">DT</div>
-                    </div>
-                    <span className="text-xs font-semibold text-[#64748B] flex items-center gap-1">
-                      <ClockIcon className="w-3.5 h-3.5" /> Just updated
-                    </span>
-                  </div>
                 </div>
               </div>
 
             </div>
           </div>
         </header>
+
+        {/* Feature 5: Trending News Detection */}
+        <section id="trending" className="py-20 bg-slate-900 text-white border-t border-slate-800 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-900 to-slate-900 pointer-events-none"></div>
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingIcon className="w-6 h-6 text-blue-400" />
+                  <h2 className="text-3xl font-extrabold text-white">Top 10 Trending</h2>
+                </div>
+                <p className="text-slate-400">Discover what the community is reading, sharing, and bookmarking right now.</p>
+              </div>
+
+              {/* Time Window Filters */}
+              <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 shadow-inner">
+                {['today', '24h', '7d', '30d'].map((window) => (
+                  <button
+                    key={window}
+                    onClick={() => setTrendingWindow(window)}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                      trendingWindow === window 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                    }`}
+                  >
+                    {window === 'today' ? 'Today' : window === '24h' ? '24 Hours' : window === '7d' ? '7 Days' : '30 Days'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {isTrendingLoading ? (
+              <div className="py-16 flex justify-center items-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-400"></div>
+              </div>
+            ) : trendingNews.length === 0 ? (
+              <div className="py-16 text-center bg-slate-800/50 rounded-xl border border-slate-700">
+                <p className="text-slate-400 text-lg">Not enough interaction data for this time period yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {trendingNews.map((news, index) => (
+                  <article key={news.article_id} className="bg-slate-800 rounded-xl p-5 border border-slate-700 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-900/20 transition-all flex flex-col justify-between relative overflow-hidden group">
+                    
+                    {/* Rank Number Badge */}
+                    <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full flex items-center justify-center text-3xl font-black opacity-20 pointer-events-none group-hover:scale-110 transition-transform ${
+                      index === 0 ? 'bg-amber-500 text-amber-100' : 
+                      index === 1 ? 'bg-slate-400 text-white' : 
+                      index === 2 ? 'bg-orange-700 text-orange-200' : 
+                      'bg-slate-600 text-slate-300'
+                    }`}>
+                      #{index + 1}
+                    </div>
+
+                    <div className="relative z-10">
+                      <div className="flex gap-2 mb-3">
+                        <span className="bg-blue-900/50 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border border-blue-800/50">
+                          {news.category}
+                        </span>
+                        <span className="bg-slate-700/50 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-600 flex items-center gap-1">
+                          <MapPinIcon className="w-3 h-3"/> {news.region_name}
+                        </span>
+                      </div>
+                      
+                      <h3 className="text-lg font-bold text-white mb-2 leading-snug line-clamp-2 group-hover:text-blue-400 transition-colors">
+                        <a href={news.article_url || "#"} target="_blank" rel="noopener noreferrer" onClick={() => handleArticleActivity(news.article_id, 'click')}>
+                          {news.title}
+                        </a>
+                      </h3>
+                      
+                      <p className="text-sm text-slate-400 line-clamp-2 mb-4">
+                        {news.summary}
+                      </p>
+                    </div>
+
+                    <div className="relative z-10 mt-auto pt-4 border-t border-slate-700">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-xs font-medium text-slate-400">Source: <strong className="text-slate-200">{news.source_name}</strong></span>
+                        <span className="text-[10px] text-slate-500">{formatDateTime(news.published_at)}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center bg-slate-900/50 rounded-lg p-2 border border-slate-800">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Interactions</span>
+                          <span className="text-sm font-black text-white">{news.total_interactions}</span>
+                        </div>
+                        <div className="flex flex-col text-right">
+                          <span className="text-[10px] uppercase tracking-wider text-blue-400/80 font-bold mb-0.5">Trend Score</span>
+                          <span className="text-sm font-black text-blue-400">{news.trending_score}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex gap-2">
+                         <button onClick={() => handleArticleActivity(news.article_id, 'bookmark')} className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 py-1.5 rounded text-xs font-semibold transition-colors">Bookmark</button>
+                         <button onClick={() => handleArticleActivity(news.article_id, 'share')} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-1.5 rounded text-xs font-semibold transition-colors">Share</button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Feature 3: Live News Preview */}
         <section id="live-feed" className="py-20 bg-[#F8FAFC] border-t border-[#E2E8F0]">
@@ -603,10 +732,8 @@ function NewsFeed() {
                 <p className="text-[#64748B]">Ranked for: <strong className="text-[#0F172A]">{activeRegion === 'All' ? 'Bangladesh (National)' : activeRegion}</strong></p>
               </div>
               
-              {/* Filter Dropdowns */}
               <div className="flex flex-wrap gap-3 w-full lg:w-auto">
                 
-                {/* NEW: Keyword Search Input */}
                 <div className="relative flex-grow md:flex-grow-0 w-full md:w-64">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <SearchIcon className="h-4 w-4 text-slate-400" />
@@ -650,7 +777,6 @@ function NewsFeed() {
               ) : filteredFeed.length === 0 ? (
                 <div className="col-span-full py-12 text-center bg-white border border-[#E2E8F0] rounded-xl">
                   <p className="text-[#64748B] text-lg font-medium">No articles found matching your filters for {activeRegion}.</p>
-                  {/* Clear Filters Button appears if any filter or search is active */}
                   {(activeCategory !== 'All' || activeSource !== 'All' || searchQuery !== "") && (
                     <button 
                       onClick={() => {
@@ -684,7 +810,7 @@ function NewsFeed() {
                       </div>
 
                       <h3 className="text-xl font-bold text-[#0F172A] mb-3 hover:text-[#2563EB] transition-colors leading-snug">
-                        <a href={news.url || "#"} target="_blank" rel="noopener noreferrer" onClick={() => handleArticleClick(news.id)}>
+                        <a href={news.url || "#"} target="_blank" rel="noopener noreferrer" onClick={() => handleArticleActivity(news.id, 'click')}>
                           {news.title}
                         </a>
                       </h3>
@@ -695,7 +821,10 @@ function NewsFeed() {
                         </p>
                         {news.summary && news.summary.length > 100 && (
                           <button 
-                            onClick={(e) => { e.preventDefault(); toggleSummary(news.id); }}
+                            onClick={(e) => {
+                              e.preventDefault(); 
+                              toggleSummary(news.id);
+                            }}
                             className="mt-2 text-xs font-bold text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
                           >
                             <span>✨</span> {expandedSummaries[news.id] ? 'Hide Summary' : 'Read AI Summary'}
@@ -720,7 +849,9 @@ function NewsFeed() {
                               <button
                                 onClick={() => handleFollowToggle(source)}
                                 className={`px-2 py-1 text-xs border-l border-white transition-colors cursor-pointer 
-                                  ${isFollowed ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-slate-200 text-slate-400 hover:bg-slate-300 hover:text-slate-600'}`}
+                                  ${isFollowed 
+                                    ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
+                                    : 'bg-slate-200 text-slate-400 hover:bg-slate-300 hover:text-slate-600'}`}
                               >
                                 ★
                               </button>
@@ -737,13 +868,19 @@ function NewsFeed() {
                           <span className="text-xs text-slate-400 font-medium mr-1">Verify:</span>
                           <button 
                             onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_real'); }}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_real' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border
+                              ${localVotes[news.id] === 'vote_real' 
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                                : 'bg-slate-50 text-slate-600 border-slate-200'}`}
                           >
                             <ThumbsUpIcon className="w-4 h-4" /> Real 
                           </button>
                           <button 
                             onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_fake'); }}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_fake' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border
+                              ${localVotes[news.id] === 'vote_fake' 
+                                ? 'bg-red-100 text-red-800 border-red-300' 
+                                : 'bg-slate-50 text-slate-600 border-slate-200'}`}
                           >
                             <ThumbsDownIcon className="w-4 h-4" /> Fake 
                           </button>
@@ -772,57 +909,40 @@ function NewsFeed() {
               </div>
             </div>
 
-            {/* Split View: Map (Left) and Sidebar (Right) */}
             <div className="flex flex-col lg:flex-row gap-6 h-auto lg:h-[600px] w-full">
               
-              {/* The Interactive Map */}
               <div className="w-full lg:w-2/3 h-[400px] lg:h-full rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-md relative z-10 bg-slate-100">
                 <MapContainer 
                   center={[23.6850, 90.3563]} 
                   zoom={7} 
-                  scrollWheelZoom={true} // Enabled scroll zooming
+                  scrollWheelZoom={true} 
                   style={{ height: "100%", width: "100%", zIndex: 1 }}
                 >
-                  <TileLayer
-                    attribution='&copy; OpenStreetMap'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
+                  <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   
-                  {/* Draw standard breaking news (Blue Pins) */}
                   {mapNews.map((regionData) => (
                     <Marker 
                       key={regionData.region} 
                       position={[regionData.lat, regionData.lng]} 
                       icon={newsIcon}
-                      eventHandlers={{
-                        click: () => {
-                          setSelectedRegionForSidebar(regionData);
-                        },
-                      }}
+                      eventHandlers={{ click: () => { setSelectedRegionForSidebar(regionData); } }}
                     >
                       <Popup>
                         <div className="p-1 min-w-[200px]">
-                          <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                            {regionData.region}
-                          </span>
-                          <h4 className="font-bold text-sm mt-2 mb-1 leading-tight line-clamp-2">
-                            {regionData.articles[0]?.title}
-                          </h4>
+                          <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">{regionData.region}</span>
+                          <h4 className="font-bold text-sm mt-2 mb-1 leading-tight line-clamp-2">{regionData.articles[0]?.title}</h4>
                           <p className="text-xs text-[#64748B] italic">Click pin to view all articles in sidebar</p>
                         </div>
                       </Popup>
                     </Marker>
                   ))}
 
-                  {/* Draw active crises (Red Pins & Radius) */}
                   {mapCrises.map((crisis) => (
                     <React.Fragment key={crisis.crisis_id}>
                       <Marker position={[crisis.latitude, crisis.longitude]} icon={crisisIcon}>
                         <Popup>
                           <div className="p-1 min-w-[200px]">
-                            <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                              CRISIS: {crisis.crisis_type}
-                            </span>
+                            <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">CRISIS: {crisis.crisis_type}</span>
                             <h4 className="font-bold text-sm mt-2 mb-1 leading-tight">{crisis.title}</h4>
                             <p className="text-xs text-slate-500 mt-1 line-clamp-2">{crisis.summary}</p>
                           </div>
@@ -836,14 +956,11 @@ function NewsFeed() {
                     </React.Fragment>
                   ))}
 
-                  {/* Draw user's live location if known */}
                   {userLocation && (
                     <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
                       <Popup>
                         <div className="p-1 text-center">
-                          <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                            You are here
-                          </span>
+                          <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">You are here</span>
                           <h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4>
                         </div>
                       </Popup>
@@ -852,49 +969,31 @@ function NewsFeed() {
                 </MapContainer>
               </div>
 
-              {/* The Dynamic Sidebar */}
               <div className="w-full lg:w-1/3 h-[500px] lg:h-full bg-slate-50 border border-[#E2E8F0] rounded-2xl p-4 overflow-y-auto map-sidebar shadow-inner flex flex-col">
                 {selectedRegionForSidebar ? (
                   <>
                     <div className="sticky top-0 bg-slate-50 pb-4 border-b border-slate-200 mb-4 z-10 flex justify-between items-center">
                       <div>
                         <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Viewing News For</span>
-                        <h3 className="text-xl font-extrabold text-[#2563EB] flex items-center gap-1.5 mt-1">
-                          <MapPinIcon className="w-5 h-5" /> {selectedRegionForSidebar.region}
-                        </h3>
+                        <h3 className="text-xl font-extrabold text-[#2563EB] flex items-center gap-1.5 mt-1"><MapPinIcon className="w-5 h-5" /> {selectedRegionForSidebar.region}</h3>
                       </div>
-                      <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                        {selectedRegionForSidebar.articles.length} updates
-                      </span>
+                      <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">{selectedRegionForSidebar.articles.length} updates</span>
                     </div>
 
                     <div className="space-y-4 flex-grow">
                       {selectedRegionForSidebar.articles.map(article => (
                         <div key={article.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 transition-colors">
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                              {article.category}
-                            </span>
-                            <span className="text-[10px] font-semibold text-slate-400">
-                              {formatDateTime(article.published_at)}
-                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{article.category}</span>
+                            <span className="text-[10px] font-semibold text-slate-400">{formatDateTime(article.published_at)}</span>
                           </div>
-                          
-                          <a href={article.url} target="_blank" rel="noopener noreferrer" className="block group">
-                            <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-3">
-                              {article.title}
-                            </h4>
+                          <a href={article.url} target="_blank" rel="noopener noreferrer" className="block group" onClick={() => handleArticleActivity(article.id, 'click')}>
+                            <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-3">{article.title}</h4>
                           </a>
-                          
-                          <p className="text-xs text-[#64748B] line-clamp-2 mb-3">
-                            {article.summary}
-                          </p>
-                          
+                          <p className="text-xs text-[#64748B] line-clamp-2 mb-3">{article.summary}</p>
                           <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
                             <span className="text-xs font-semibold text-slate-500">Source: <span className="text-slate-700">{article.source}</span></span>
-                            <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#2563EB] hover:underline">
-                              Read Full ↗
-                            </a>
+                            <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#2563EB] hover:underline" onClick={() => handleArticleActivity(article.id, 'click')}>Read Full ↗</a>
                           </div>
                         </div>
                       ))}
@@ -917,42 +1016,27 @@ function NewsFeed() {
         <section id="geo-ranking" className="py-20 bg-slate-50 border-t border-[#E2E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl mb-4">
-                Your world, centered around you.
-              </h2>
-              <p className="text-lg text-[#64748B]">
-                Our engine detects your geographical context and ranks database entities accordingly. You see critical local updates first, followed by national and international events.
-              </p>
+              <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl mb-4">Your world, centered around you.</h2>
+              <p className="text-lg text-[#64748B]">Our engine detects your geographical context and ranks database entities accordingly. You see critical local updates first, followed by national and international events.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
               <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-blue-200 via-slate-200 to-slate-200 -z-10 transform -translate-y-1/2"></div>
-              {/* Card 1: High Priority */}
               <article className="bg-white rounded-2xl shadow-sm border border-[#2563EB] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md">
-                <div className="absolute -top-4 left-6 bg-[#2563EB] text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
-                  <MapPinIcon className="w-3 h-3" /> Priority 1: Local
-                </div>
-                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]">
-                  <span className="font-semibold text-[#0F172A]">Dhaka</span> • 2km away
-                </div>
+                <div className="absolute -top-4 left-6 bg-[#2563EB] text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1"><MapPinIcon className="w-3 h-3" /> Priority 1: Local</div>
+                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">Dhaka</span> • 2km away</div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">Water logging alert in Dhanmondi</h3>
                 <p className="text-sm text-[#64748B]">Heavy rainfall has caused severe water logging. Avoid Road 27 if possible.</p>
               </article>
-              {/* Card 2: Medium Priority */}
               <article className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-95">
                 <div className="absolute -top-4 left-6 bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">Priority 2: National</div>
-                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]">
-                  <span className="font-semibold text-[#0F172A]">Bangladesh</span> • Regional
-                </div>
+                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">Bangladesh</span> • Regional</div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">New Taxation Policy Announced</h3>
                 <p className="text-sm text-[#64748B]">The NBR has updated the fiscal year tax brackets for individual taxpayers.</p>
               </article>
-              {/* Card 3: Low Priority */}
               <article className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-75">
                 <div className="absolute -top-4 left-6 bg-slate-300 text-slate-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">Priority 3: Global</div>
-                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]">
-                  <span className="font-semibold text-[#0F172A]">International</span> • Global
-                </div>
+                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">International</span> • Global</div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">European Markets Close Higher</h3>
                 <p className="text-sm text-[#64748B]">Tech stocks rally late in the day leading to a positive close across European indices.</p>
               </article>
@@ -965,26 +1049,19 @@ function NewsFeed() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row items-center gap-16">
               <div className="w-full lg:w-1/2 order-2 lg:order-1">
-                {/* Visual DB Node Representation */}
                 <div className="bg-slate-50 rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
                   <div className="absolute z-10 bg-white border-2 border-[#2563EB] rounded-xl p-4 shadow-lg w-48 text-center text-sm font-bold text-[#0F172A]">
                     Event Entity: <br/> Election Results
-                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs border border-emerald-200">
-                      Score: 92%
-                    </div>
+                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs border border-emerald-200">Score: 92%</div>
                   </div>
-                  {/* Source Nodes */}
                   <div className="absolute top-8 left-8 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
-                     <div className="w-6 h-6 rounded bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">B</div>
-                     <span className="text-xs font-semibold">BBC News</span>
+                     <div className="w-6 h-6 rounded bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">B</div><span className="text-xs font-semibold">BBC News</span>
                   </div>
                   <div className="absolute top-8 right-8 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
-                     <div className="w-6 h-6 rounded bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">R</div>
-                     <span className="text-xs font-semibold">Reuters</span>
+                     <div className="w-6 h-6 rounded bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">R</div><span className="text-xs font-semibold">Reuters</span>
                   </div>
                   <div className="absolute bottom-8 right-16 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
-                     <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">A</div>
-                     <span className="text-xs font-semibold">Al Jazeera</span>
+                     <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">A</div><span className="text-xs font-semibold">Al Jazeera</span>
                   </div>
                   <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
                     <line x1="20%" y1="20%" x2="40%" y2="40%" stroke="#10B981" strokeWidth="2" strokeDasharray="4 4" />
@@ -998,39 +1075,19 @@ function NewsFeed() {
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-sm uppercase tracking-wide">
                   <ShieldCheckIcon className="w-4 h-4" /> Database-Verified Trust
                 </div>
-                <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl">
-                  Truth through consensus.
-                </h2>
-                <p className="text-lg text-[#64748B]">
-                  In an era of misinformation, single-source news isn't enough. Our backend algorithms map news articles to specific events and calculate a dynamic credibility score based on the weight and volume of trusted sources reporting it.
-                </p>
-                
+                <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl">Truth through consensus.</h2>
+                <p className="text-lg text-[#64748B]">In an era of misinformation, single-source news isn't enough. Our backend algorithms map news articles to specific events and calculate a dynamic credibility score based on the weight and volume of trusted sources reporting it.</p>
                 <ul className="space-y-4 mt-6">
                   <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-[#0F172A]">High Credibility ({'>'}80%)</p>
-                      <p className="text-sm text-[#64748B]">Event verified by multiple established global and national sources.</p>
-                    </div>
+                    <div className="flex-shrink-0 mt-1"><div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center"><svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg></div></div>
+                    <div><p className="font-semibold text-[#0F172A]">High Credibility ({'>'}80%)</p><p className="text-sm text-[#64748B]">Event verified by multiple established global and national sources.</p></div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-[#0F172A]">Low Credibility ({'<'}50%)</p>
-                      <p className="text-sm text-[#64748B]">Single-source report from an unverified or historically biased publication.</p>
-                    </div>
+                    <div className="flex-shrink-0 mt-1"><div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center"><svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div></div>
+                    <div><p className="font-semibold text-[#0F172A]">Low Credibility ({'<'}50%)</p><p className="text-sm text-[#64748B]">Single-source report from an unverified or historically biased publication.</p></div>
                   </li>
                 </ul>
               </div>
-
             </div>
           </div>
         </section>
@@ -1051,9 +1108,9 @@ function NewsFeed() {
             <div>
               <h4 className="text-white font-bold mb-4">Platform</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition-colors">Local News</a></li>
-                <li><a href="#credibility" className="hover:text-white transition-colors">Credibility Engine</a></li>
-                <li><a href="#news-map" className="hover:text-white transition-colors">Crisis Alerts</a></li>
+                <li><a href="#trending" className="hover:text-white transition-colors">Trending</a></li>
+                <li><a href="#live-feed" className="hover:text-white transition-colors">Local News</a></li>
+                <li><a href="#news-map" className="hover:text-white transition-colors">Interactive Map</a></li>
               </ul>
             </div>
 
@@ -1065,65 +1122,34 @@ function NewsFeed() {
               </ul>
             </div>
           </div>
-          
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-sm text-slate-500 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p>&copy; 2026 কাগজের স্তূপ. All rights reserved.</p>
-            <div className="flex gap-4">
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
-            </div>
-          </div>
         </footer>
 
         {/* Authentication Modal */}
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
-              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">
-                ✕
-              </button>
+              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">✕</button>
               <div className="p-8">
                 <h2 className="text-2xl font-bold text-[#0F172A] mb-2">{authMode === "login" ? "Sign In required" : "Create an account"}</h2>
-                <p className="text-[#64748B] text-sm mb-6">
-                  {authMode === "login" ? "You must be logged in to vote on news credibility." : "Join to verify news and get geo-prioritized alerts."}
-                </p>
+                <p className="text-[#64748B] text-sm mb-6">{authMode === "login" ? "You must be logged in to interact." : "Join to verify news and get geo-prioritized alerts."}</p>
                 {authError && <div className={`p-3 mb-4 text-sm rounded-lg ${authError.includes('successful') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>{authError}</div>}
                 <form onSubmit={handleAuthSubmit} className="space-y-4">
                   {authMode === "signup" && (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                      <input type="text" required value={authName} onChange={(e) => setAuthName(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:outline-none" placeholder="John Doe"/>
-                    </div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label><input type="text" required value={authName} onChange={(e) => setAuthName(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="John Doe"/></div>
                   )}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                    <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:outline-none" placeholder="you@example.com"/>
-                  </div>
+                  <div><label className="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="you@example.com"/></div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                     <div className="relative">
-                      <input 
-                        type={showPassword ? "text" : "password"} 
-                        required 
-                        value={authPassword} 
-                        onChange={(e) => setAuthPassword(e.target.value)} 
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:outline-none pr-10" 
-                        placeholder="••••••••"
-                      />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-700">
-                        {showPassword ? "🙈" : "👁️"}
-                      </button>
+                      <input type={showPassword ? "text" : "password"} required value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="••••••••"/>
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500"> {showPassword ? "🙈" : "👁️"} </button>
                     </div>
                   </div>
-                  <button type="submit" className="w-full bg-[#2563EB] hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors mt-2">
-                    {authMode === "login" ? "Sign In" : "Sign Up"}
-                  </button>
+                  <button type="submit" className="w-full bg-[#2563EB] hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg mt-2">{authMode === "login" ? "Sign In" : "Sign Up"}</button>
                 </form>
                 <div className="mt-6 text-center text-sm text-slate-600">
                   {authMode === "login" ? "Don't have an account? " : "Already have an account? "}
-                  <button onClick={() => {setAuthMode(authMode === "login" ? "signup" : "login"); setAuthError("");}} className="text-[#2563EB] font-bold hover:underline focus:outline-none">
-                    {authMode === "login" ? "Sign Up" : "Log In"}
-                  </button>
+                  <button onClick={() => {setAuthMode(authMode === "login" ? "signup" : "login"); setAuthError("");}} className="text-[#2563EB] font-bold hover:underline">{authMode === "login" ? "Sign Up" : "Log In"}</button>
                 </div>
               </div>
             </div>

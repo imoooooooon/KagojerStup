@@ -277,7 +277,7 @@ app.get('/api/crises', async (req, res) => {
   }
 });
 
-// API Endpoint (Feature 8): Get Location-Based Breaking News Grouped by Region
+// API Endpoint: Get Location-Based Breaking News Grouped by Region
 app.get('/api/map-news', async (req, res) => {
   try {
     const sql = `
@@ -358,8 +358,91 @@ app.post('/api/check-crisis-alert', async (req, res) => {
 
 
 // ==========================================
-// 3. USER ACTIVITY & INTERACTIONS
+// 3. USER ACTIVITY & TRENDING (FEATURE 5)
 // ==========================================
+
+// NEW API Endpoint: Get Trending News
+app.get('/api/trending-news', async (req, res) => {
+  try {
+    let { window } = req.query; // Expects 'today', '24h', '7d', '30d'
+    let timeCondition = '';
+
+    if (window === 'today') {
+      timeCondition = 'DATE(ua.activity_time) = CURDATE()';
+    } else if (window === '24h') {
+      timeCondition = 'ua.activity_time >= NOW() - INTERVAL 24 HOUR';
+    } else if (window === '7d') {
+      timeCondition = 'ua.activity_time >= NOW() - INTERVAL 7 DAY';
+    } else if (window === '30d') {
+      timeCondition = 'ua.activity_time >= NOW() - INTERVAL 30 DAY';
+    } else {
+      window = '24h';
+      timeCondition = 'ua.activity_time >= NOW() - INTERVAL 24 HOUR';
+    }
+
+    const sqlQuery = `
+      SELECT 
+        na.article_id, 
+        na.title, 
+        na.summary, 
+        na.category, 
+        na.published_at, 
+        na.article_url,
+        ns.source_name, 
+        e.canonical_title AS event_title, 
+        r.region_name,
+        COUNT(ua.activity_id) AS total_interactions,
+        SUM(
+          CASE 
+            WHEN ua.activity_type = 'click' THEN 1 
+            WHEN ua.activity_type = 'read' THEN 2 
+            WHEN ua.activity_type = 'bookmark' THEN 4 
+            WHEN ua.activity_type = 'share' THEN 5 
+            ELSE 0 
+          END
+        ) + SUM(IF(ua.reading_time > 60, 2, 0)) AS trending_score
+      FROM news_article na
+      JOIN news_source ns ON na.source_id = ns.source_id
+      JOIN event e ON na.event_id = e.event_id
+      JOIN region r ON e.region_id = r.region_id
+      JOIN user_activity ua ON na.article_id = ua.article_id
+      WHERE ${timeCondition}
+      GROUP BY 
+        na.article_id, na.title, na.summary, na.category, 
+        na.published_at, na.article_url, ns.source_name, 
+        e.canonical_title, r.region_name
+      ORDER BY trending_score DESC
+      LIMIT 10
+    `;
+
+    const [trendingRows] = await pool.execute(sqlQuery);
+
+    // Save/Update the calculated scores in trending_record for analytics
+    for (const item of trendingRows) {
+      const [existing] = await pool.execute(
+        'SELECT trending_id FROM trending_record WHERE article_id = ? AND time_window = ?', 
+        [item.article_id, window]
+      );
+      
+      if (existing.length > 0) {
+        await pool.execute(
+          'UPDATE trending_record SET score = ?, calculated_at = NOW() WHERE trending_id = ?', 
+          [item.trending_score, existing[0].trending_id]
+        );
+      } else {
+        await pool.execute(
+          'INSERT INTO trending_record (article_id, time_window, score) VALUES (?, ?, ?)', 
+          [item.article_id, window, item.trending_score]
+        );
+      }
+    }
+
+    res.json(trendingRows);
+  } catch (error) {
+    console.error("Trending error:", error);
+    res.status(500).json({ error: 'Failed to fetch trending news' });
+  }
+});
 
 app.post('/api/vote', async (req, res) => {
   try {
@@ -423,10 +506,10 @@ app.post('/api/remove-vote', async (req, res) => {
 
 app.post('/api/track-activity', async (req, res) => {
   try {
-    const { userId, articleId, activityType } = req.body;
+    const { userId, articleId, activityType, readingTime } = req.body;
     await pool.execute(
-      "INSERT INTO user_activity (user_id, article_id, activity_type, activity_time) VALUES (?, ?, ?, NOW())",
-      [userId, articleId, activityType || 'click']
+      "INSERT INTO user_activity (user_id, article_id, activity_type, reading_time, activity_time) VALUES (?, ?, ?, ?, NOW())",
+      [userId, articleId, activityType || 'click', readingTime || null]
     );
     res.json({ message: "Activity tracked successfully" });
   } catch (error) {
