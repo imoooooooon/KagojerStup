@@ -1151,20 +1151,22 @@ function NewsFeed() {
 
         {/* NEW FEATURE: PERSONALIZED "FOR YOU" SECTION */}
         {currentUser && personalizedFeed.length > 0 && (
-          <section className="py-12 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-[#E2E8F0] overflow-hidden">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center gap-2 mb-6">
+          <section className="py-20 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-[#E2E8F0] relative overflow-hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="flex items-center gap-2 mb-2">
                 <SparklesIcon className="w-6 h-6 text-[#2563EB]" />
-                <h2 className="text-2xl font-extrabold text-[#0F172A]">Recommended For You</h2>
+                <h2 className="text-3xl font-extrabold text-[#0F172A]">Recommended For You</h2>
               </div>
-              <p className="text-sm text-[#64748B] mb-6">Based on the categories you read and the sources you follow.</p>
+              <p className="text-[#64748B] mb-10">Based on the categories you read and the sources you follow.</p>
               
-              {/* Horizontal Scrolling Container */}
-              <div className="flex overflow-x-auto gap-6 pb-6 hide-scrollbar snap-x snap-mandatory">
+              {/* Grid Container (Matches Live Feed exactly) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {isPersonalizedLoading ? (
-                  <div className="w-full flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div></div>
+                  <div className="col-span-full py-12 flex justify-center items-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div>
+                  </div>
                 ) : (
-                  personalizedFeed.map(news => renderNewsCard(news, false, null, true))
+                  personalizedFeed.map((news) => renderNewsCard(news, false))
                 )}
               </div>
             </div>
