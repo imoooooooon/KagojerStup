@@ -33,6 +33,16 @@ const newsIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Custom Green Icon for User's Live Location
+const userLocationIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 // --- Icons ---
 const MapPinIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -106,8 +116,8 @@ function NewsFeed() {
   const [userLocation, setUserLocation] = useState(null);
   
   const [mapCrises, setMapCrises] = useState([]);
-  const [mapNews, setMapNews] = useState([]); // Array of grouped articles by region
-  const [selectedRegionForSidebar, setSelectedRegionForSidebar] = useState(null); // The region currently clicked on map
+  const [mapNews, setMapNews] = useState([]); 
+  const [selectedRegionForSidebar, setSelectedRegionForSidebar] = useState(null); 
   
   const [expandedSummaries, setExpandedSummaries] = useState({});
   const [newsFeed, setNewsFeed] = useState([]);
@@ -674,7 +684,9 @@ function NewsFeed() {
                   <MapPinIcon className="w-6 h-6 text-[#2563EB]" />
                   <h2 className="text-3xl font-extrabold text-[#0F172A]">Interactive News Map</h2>
                 </div>
-                <p className="text-[#64748B]">Click on a <strong className="text-blue-600">blue pin</strong> to see breaking news, or a <strong className="text-red-600">red pin</strong> for active crises.</p>
+                <p className="text-[#64748B]">
+                  Click on a <strong className="text-blue-600">blue pin</strong> for breaking news, a <strong className="text-red-600">red pin</strong> for active crises, and see the <strong className="text-emerald-600">green pin</strong> for your live location.
+                </p>
               </div>
             </div>
 
@@ -686,7 +698,7 @@ function NewsFeed() {
                 <MapContainer 
                   center={[23.6850, 90.3563]} 
                   zoom={7} 
-                  scrollWheelZoom={false}
+                  scrollWheelZoom={true} // Enabled scroll zooming
                   style={{ height: "100%", width: "100%", zIndex: 1 }}
                 >
                   <TileLayer
@@ -742,10 +754,17 @@ function NewsFeed() {
                     </React.Fragment>
                   ))}
 
-                  {/* Draw user's live location if enabled */}
+                  {/* Draw user's live location if known */}
                   {userLocation && (
-                    <Marker position={[userLocation.lat, userLocation.lng]}>
-                      <Popup>Your Location</Popup>
+                    <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
+                      <Popup>
+                        <div className="p-1 text-center">
+                          <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
+                            You are here
+                          </span>
+                          <h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4>
+                        </div>
+                      </Popup>
                     </Marker>
                   )}
                 </MapContainer>
@@ -1023,3 +1042,4 @@ export default function App() {
     </Router>
   );
 }
+```</MapContainer>
