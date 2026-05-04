@@ -73,7 +73,7 @@ app.get('/api/news', async (req, res) => {
       queryParams.push(region);
     }
     
-    sqlQuery += ` ORDER BY na.published_at DESC LIMIT 50`;
+    sqlQuery += ` ORDER BY na.published_at DESC`;
 
     const [rows] = await pool.execute(sqlQuery, queryParams);
 
@@ -170,7 +170,7 @@ app.get('/api/news/personalized', async (req, res) => {
       queryParams.push(region);
     }
     
-    sqlQuery += ` ORDER BY na.published_at DESC LIMIT 50`;
+    sqlQuery += ` ORDER BY na.published_at DESC`;
 
     const [rows] = await pool.execute(sqlQuery, queryParams);
 

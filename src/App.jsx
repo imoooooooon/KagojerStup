@@ -301,7 +301,7 @@ function NewsFeed() {
   // Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('kagojer_user');
-    return savedUser ? JSON.parse(savedUser) : { userId: 1, name: "Mehrab Mugdho", email: "mehrab@example.com" }; 
+    return savedUser ? JSON.parse(savedUser) : null; 
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -1517,8 +1517,7 @@ function NewsFeed() {
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('kagojer_user');
-    // Fulfills "Assume user_id = 1"
-    return savedUser ? JSON.parse(savedUser) : { userId: 1, name: "Mehrab Mugdho", email: "mehrab@example.com" }; 
+    return savedUser ? JSON.parse(savedUser) : null; 
   });
 
   const handleLogout = () => {
