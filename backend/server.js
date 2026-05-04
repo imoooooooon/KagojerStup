@@ -137,7 +137,7 @@ app.get('/api/news/personalized', async (req, res) => {
     `, [userId]);
     const followedSourceNames = follows.map(f => f.source_name);
 
-    // 3. Fetch the last 200 articles to score them
+    // 3. Fetch the last articles to score them
     let sqlQuery = `
       SELECT 
         na.article_id AS id, 
@@ -170,7 +170,6 @@ app.get('/api/news/personalized', async (req, res) => {
       JOIN event e ON na.event_id = e.event_id
       JOIN region r ON e.region_id = r.region_id
       ORDER BY na.published_at DESC 
-      LIMIT 200
     `;
 
     const [rows] = await pool.execute(sqlQuery);
@@ -362,7 +361,6 @@ app.get('/api/map-news', async (req, res) => {
       JOIN news_source ns ON na.source_id = ns.source_id
       WHERE r.latitude IS NOT NULL AND r.longitude IS NOT NULL
       ORDER BY na.published_at DESC
-      LIMIT 200
     `;
     const [rows] = await pool.execute(sql);
 
