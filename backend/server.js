@@ -105,32 +105,39 @@ app.get('/api/news', async (req, res) => {
   }
 });
 
-// API Endpoint: Get Personalized News Feed (Logged In)
+// API Endpoint: Get Personalized News Feed (Logged In - AI Recommended)
 app.get('/api/news/personalized', async (req, res) => {
   try {
-    const { region, userId } = req.query;
+    const { userId } = req.query;
 
-    const [preferences] = await pool.execute(`
-      SELECT na.category, COUNT(*) as interaction_count
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID required' });
+    }
+
+    // 1. Calculate Category Affinity (What topics do they like?)
+    const [categoryPrefs] = await pool.execute(`
+      SELECT na.category, COUNT(*) as weight
       FROM user_activity ua
       JOIN news_article na ON ua.article_id = na.article_id
-      WHERE ua.user_id = ? AND ua.activity_type IN ('click', 'read', 'share', 'bookmark')
+      WHERE ua.user_id = ?
       GROUP BY na.category
-      ORDER BY interaction_count DESC
-      LIMIT 3
+      ORDER BY weight DESC
     `, [userId]);
+    const preferredCategories = categoryPrefs.reduce((acc, curr) => {
+      acc[curr.category] = curr.weight;
+      return acc;
+    }, {});
 
-    const preferredCategories = preferences.map(p => p.category);
-
+    // 2. Get Followed Sources (What portals do they trust?)
     const [follows] = await pool.execute(`
       SELECT ns.source_name 
       FROM follows f 
       JOIN news_source ns ON f.source_id = ns.source_id 
       WHERE f.user_id = ?
     `, [userId]);
-    
     const followedSourceNames = follows.map(f => f.source_name);
 
+    // 3. Fetch the last 200 articles to score them
     let sqlQuery = `
       SELECT 
         na.article_id AS id, 
@@ -162,33 +169,34 @@ app.get('/api/news/personalized', async (req, res) => {
       FROM news_article na
       JOIN event e ON na.event_id = e.event_id
       JOIN region r ON e.region_id = r.region_id
+      ORDER BY na.published_at DESC 
+      LIMIT 200
     `;
 
-    const queryParams = [];
-    if (region && region !== 'All') {
-      sqlQuery += ` WHERE r.region_name = ? `;
-      queryParams.push(region);
-    }
-    
-    sqlQuery += ` ORDER BY na.published_at DESC`;
+    const [rows] = await pool.execute(sqlQuery);
 
-    const [rows] = await pool.execute(sqlQuery, queryParams);
-
+    // 4. The Recommendation Engine Algorithm
     let formattedData = rows.map(row => {
       let finalScore = row.base_score + (row.real_votes * 2) - (row.fake_votes * 5);
       finalScore = Math.max(0, Math.min(100, finalScore));
 
       let personalSortWeight = finalScore; 
-      if (preferredCategories.includes(row.category)) {
+      
+      // Boost 1: Category Match (More clicks = higher boost)
+      if (preferredCategories[row.category]) {
+        personalSortWeight += (preferredCategories[row.category] * 10); 
+      }
+
+      // Boost 2: Followed Source Match
+      const articleSources = row.all_event_sources ? row.all_event_sources.split('||') : [];
+      const hasFollowedSource = articleSources.some(source => followedSourceNames.includes(source));
+      if (hasFollowedSource) {
         personalSortWeight += 50; 
       }
 
-      const articleSources = row.all_event_sources ? row.all_event_sources.split('||') : [];
-      const hasFollowedSource = articleSources.some(source => followedSourceNames.includes(source));
-      
-      if (hasFollowedSource) {
-        personalSortWeight += 75; 
-      }
+      // Penalty: Age Degradation (Older news loses relevance)
+      const hoursOld = (new Date() - new Date(row.time)) / (1000 * 60 * 60);
+      personalSortWeight -= (hoursOld * 0.5);
 
       return {
         id: row.id,
@@ -207,8 +215,10 @@ app.get('/api/news/personalized', async (req, res) => {
       };
     });
 
+    // Sort by the algorithm's weight, then slice the top 12
     formattedData.sort((a, b) => b.sortWeight - a.sortWeight);
-    res.json(formattedData); 
+    res.json(formattedData.slice(0, 12)); 
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Personalized feed generation failed' });

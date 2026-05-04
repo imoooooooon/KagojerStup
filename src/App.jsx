@@ -99,6 +99,12 @@ const TrendingIcon = ({ className }) => (
   </svg>
 );
 
+const SparklesIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+  </svg>
+);
+
 const UserIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -291,6 +297,10 @@ function NewsFeed() {
   const [trendingWindow, setTrendingWindow] = useState("24h");
   const [isTrendingLoading, setIsTrendingLoading] = useState(true);
 
+  // NEW: Personalized Feed State
+  const [personalizedFeed, setPersonalizedFeed] = useState([]);
+  const [isPersonalizedLoading, setIsPersonalizedLoading] = useState(false);
+
   // Interaction States
   const [expandedSummaries, setExpandedSummaries] = useState({});
   const [translatedArticles, setTranslatedArticles] = useState({}); 
@@ -379,6 +389,29 @@ function NewsFeed() {
     fetchMapData();
   }, [activeRegion, currentUser, articleId]); 
 
+  // NEW: Fetch Personalized Feed 
+  useEffect(() => {
+    if (!currentUser) {
+      setPersonalizedFeed([]);
+      return;
+    }
+
+    const fetchPersonalized = async () => {
+      setIsPersonalizedLoading(true);
+      try {
+        const response = await fetch(`https://kagojerstup.onrender.com/api/news/personalized?userId=${currentUser.userId}`);
+        const data = await response.json();
+        setPersonalizedFeed(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to fetch personalized news:", error);
+      } finally {
+        setIsPersonalizedLoading(false);
+      }
+    };
+    
+    fetchPersonalized();
+  }, [currentUser, localVotes, bookmarkedArticleIds, followedSources]);
+  
   // Fetch Trending News
   useEffect(() => {
     const fetchTrending = async () => {
@@ -518,6 +551,7 @@ function NewsFeed() {
       };
       
       setNewsFeed(prevFeed => prevFeed.map(updateNews));
+      setPersonalizedFeed(prevFeed => prevFeed.map(updateNews));
       if (highlightedArticle && highlightedArticle.id === id) {
         setHighlightedArticle(updateNews(highlightedArticle));
       }
@@ -921,6 +955,10 @@ function NewsFeed() {
         @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
         body { font-family: 'Plus Jakarta Sans', 'Hind Siliguri', sans-serif; scroll-behavior: smooth; }
         
+        /* Hide scrollbar for horizontal scrolling but allow scroll */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
         .map-sidebar::-webkit-scrollbar { width: 6px; }
         .map-sidebar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
         .map-sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
@@ -1084,6 +1122,28 @@ function NewsFeed() {
             </div>
           </div>
         </header>
+
+        {/* NEW FEATURE: PERSONALIZED "FOR YOU" SECTION */}
+        {currentUser && personalizedFeed.length > 0 && (
+          <section className="py-12 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-[#E2E8F0] overflow-hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center gap-2 mb-6">
+                <SparklesIcon className="w-6 h-6 text-[#2563EB]" />
+                <h2 className="text-2xl font-extrabold text-[#0F172A]">Recommended For You</h2>
+              </div>
+              <p className="text-sm text-[#64748B] mb-6">Based on the categories you read and the sources you follow.</p>
+              
+              {/* Horizontal Scrolling Container */}
+              <div className="flex overflow-x-auto gap-6 pb-6 hide-scrollbar snap-x snap-mandatory">
+                {isPersonalizedLoading ? (
+                  <div className="w-full flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div></div>
+                ) : (
+                  personalizedFeed.map(news => renderNewsCard(news, false, null, true))
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Feature 5: Trending News Detection */}
         <section id="trending" className="py-20 bg-slate-50 border-b border-[#E2E8F0] relative overflow-hidden">
