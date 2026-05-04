@@ -277,7 +277,7 @@ app.get('/api/crises', async (req, res) => {
   }
 });
 
-// NEW API Endpoint (Feature 8): Get Location-Based Breaking News Grouped by Region
+// API Endpoint (Feature 8): Get Location-Based Breaking News Grouped by Region
 app.get('/api/map-news', async (req, res) => {
   try {
     const sql = `
