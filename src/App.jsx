@@ -13,31 +13,129 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Custom Icons for Map
-const crisisIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
-const newsIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
-const userLocationIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
+// Custom Red Icon for Crisis Events
+const crisisIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
-// --- SVG Icons ---
-const MapPinIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>);
-const ShieldCheckIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>);
-const SearchIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>);
-const ThumbsUpIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>);
-const ThumbsDownIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" /></svg>);
-const ClockIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>);
-const AlertTriangleIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>);
-const TrendingIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>);
-const UserIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>);
-const ShareIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>);
-const BookmarkOutlineIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>);
-const BookmarkSolidIcon = ({ className }) => (<svg className={className} fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" /></svg>);
-const CheckIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>);
+// Custom Blue Icon for Standard Breaking News
+const newsIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Custom Green Icon for User's Live Location
+const userLocationIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// --- Icons ---
+const MapPinIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
+const ShieldCheckIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+  </svg>
+);
+
+const SearchIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const ThumbsUpIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+  </svg>
+);
+
+const ThumbsDownIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+  </svg>
+);
+
+const LayersIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+  </svg>
+);
+
+const ClockIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const AlertTriangleIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
+
+const TrendingIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+  </svg>
+);
+
+const UserIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+);
+
+const ShareIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+  </svg>
+);
+
+const BookmarkOutlineIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+  </svg>
+);
+
+const BookmarkSolidIcon = ({ className }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 20 20">
+    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+  </svg>
+);
+
+const CheckIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </svg>
+);
 
 const formatDateTime = (dateString) => {
   if (!dateString) return "Unknown Date";
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return dateString; 
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+  return date.toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+  });
 };
 
 // ==========================================
@@ -64,7 +162,9 @@ function UserProfile({ currentUser, handleLogout }) {
         setBookmarks(await bookRes.json());
         setActivities(await actRes.json());
         setFollows(await folRes.json());
-      } catch (error) { console.error("Error loading dashboard", error); }
+      } catch (error) { 
+        console.error("Error loading dashboard", error); 
+      }
       setIsLoading(false);
     };
     loadDashboard();
@@ -553,6 +653,7 @@ function NewsFeed() {
         const lon = position.coords.longitude;
         setUserLocation({ lat, lng: lon });
 
+        // Check for Active Crisis near User
         const alertRes = await fetch('https://kagojerstup.onrender.com/api/check-crisis-alert', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -566,6 +667,7 @@ function NewsFeed() {
           setLocalCrisisAlert(null); 
         }
         
+        // Reverse-geocode to get the city name
         const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
         const data = await response.json();
         const city = data.city || data.locality || "Dhaka"; 
@@ -598,6 +700,7 @@ function NewsFeed() {
 
     const isCurrentlyFollowing = followedSources.includes(sourceName);
     
+    // Optimistic UI update
     if (isCurrentlyFollowing) {
       setFollowedSources(prev => prev.filter(s => s !== sourceName));
     } else {
@@ -612,6 +715,7 @@ function NewsFeed() {
       });
     } catch (error) {
       console.error("Follow toggle failed:", error);
+      // Revert if API fails
       if (isCurrentlyFollowing) {
         setFollowedSources(prev => [...prev, sourceName]);
       } else {
@@ -634,8 +738,9 @@ function NewsFeed() {
     }));
   };
 
-  // Reusable News Card Renderer
-  // Includes FIX for broken footer structure
+  // ==========================================
+  // HELPER: RENDER NEWS CARD
+  // ==========================================
   const renderNewsCard = (news, isHighlighted = false, rank = null) => {
     const articleId = news.id || news.article_id;
     const isBookmarked = bookmarkedArticleIds.includes(articleId);
@@ -713,7 +818,6 @@ function NewsFeed() {
             </div>
           </div>
           
-          {/* Push sources & footer to the bottom */}
           <div className="mt-auto">
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <span className="text-xs text-slate-500 font-medium">Sources:</span>
@@ -741,7 +845,7 @@ function NewsFeed() {
           </div>
         </div>
         
-        {/* THE FIX: Added flex-wrap and gap-y-3 to gracefully drop buttons to next line if cramped */}
+        {/* FOOTER FIX: Added flex-wrap and gap-y-3 to fix UI overflow on small screens */}
         <div className="pt-4 border-t border-[#E2E8F0] flex flex-wrap justify-between items-center gap-y-3 gap-x-2 relative z-10 mt-2">
           <div className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
             <ClockIcon className="w-3.5 h-3.5" /> {formatDateTime(news.time || news.published_at)}
@@ -791,8 +895,11 @@ function NewsFeed() {
     );
   };
 
+  // --- THE FIX: Restored the missing category variables ---
+  const uniqueCategories = ["All", ...new Set(newsFeed.map(item => item.category).filter(Boolean))];
+  const uniqueSources = ["All", ...new Set(newsFeed.flatMap(item => item.sources || []).filter(Boolean))];
+
   const filteredFeed = newsFeed.filter(news => {
-    // Exclude the highlighted article from the main feed loop to prevent showing it twice
     if (highlightedArticle && news.id === highlightedArticle.id) return false;
 
     const matchCategory = activeCategory === 'All' || news.category === activeCategory;
@@ -863,14 +970,14 @@ function NewsFeed() {
             <div className="flex justify-between items-center h-16">
               
               {/* THE FIX: Fixed Home Button Routing */}
-              <a href="/" onClick={(e) => { e.preventDefault(); window.scrollTo(0,0); navigate('/'); }} className="flex items-center gap-2 cursor-pointer group">
+              <Link to="/" onClick={() => window.scrollTo(0,0)} className="flex items-center gap-2 cursor-pointer group">
                 <div className="w-8 h-8 rounded bg-[#2563EB] text-white flex items-center justify-center font-bold text-lg group-hover:bg-blue-700 transition-colors">ক</div>
                 <span className="font-bold text-xl tracking-tight group-hover:text-[#2563EB] transition-colors">কাগজের স্তূপ</span>
-              </a>
+              </Link>
               
               <div className="hidden md:flex space-x-8">
                 {/* THE FIX: Added Live Feed back and fixed Home Button */}
-                <a href="/" onClick={(e) => { e.preventDefault(); window.scrollTo(0,0); navigate('/'); }} className="text-[#0F172A] font-medium hover:text-[#2563EB]">Home</a>
+                <Link to="/" onClick={() => window.scrollTo(0,0)} className="text-[#0F172A] font-medium hover:text-[#2563EB]">Home</Link>
                 <a href="/#trending" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><TrendingIcon className="w-4 h-4"/> Trending</a>
                 <a href="/#live-feed" className="text-[#64748B] font-medium hover:text-[#2563EB]">Live Feed</a>
                 <a href="/#news-map" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><MapPinIcon className="w-4 h-4"/> Global Map</a>
@@ -917,7 +1024,7 @@ function NewsFeed() {
                   <div className="flex flex-col sm:flex-row gap-3 max-w-lg">
                     <div className="relative flex-grow group">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <MapPinIcon className="h-5 w-5 text-[#64748B] group-focus-within:text-[#2563EB] transition-colors" />
+                        <MapPinIcon className="w-5 h-5 text-[#64748B] group-focus-within:text-[#2563EB] transition-colors" />
                       </div>
                       <select 
                         value={activeRegion}
@@ -1165,7 +1272,12 @@ function NewsFeed() {
 
                   {userLocation && (
                     <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
-                      <Popup><div className="p-1 text-center"><span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">You are here</span><h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4></div></Popup>
+                      <Popup>
+                        <div className="p-1 text-center">
+                          <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">You are here</span>
+                          <h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4>
+                        </div>
+                      </Popup>
                     </Marker>
                   )}
                 </MapContainer>
@@ -1192,20 +1304,7 @@ function NewsFeed() {
                           <a href={article.url} target="_blank" rel="noopener noreferrer" className="block group" onClick={() => handleArticleActivity(article.id, 'click')}>
                             <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-3">{article.title}</h4>
                           </a>
-                          
-                          <p className="text-xs text-[#64748B] line-clamp-2 mb-2">
-                             {translatedArticles[article.id] && article.translation ? article.translation : article.summary}
-                          </p>
-
-                          {article.translation && (
-                            <button 
-                              onClick={(e) => { e.preventDefault(); toggleTranslation(article.id); }}
-                              className="mb-3 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded transition-colors"
-                            >
-                              🌐 {translatedArticles[article.id] ? 'Original' : 'Translate'}
-                            </button>
-                          )}
-
+                          <p className="text-xs text-[#64748B] line-clamp-2 mb-3">{article.summary}</p>
                           <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
                             <span className="text-xs font-semibold text-slate-500">Source: <span className="text-slate-700">{article.source}</span></span>
                             <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#2563EB] hover:underline" onClick={() => handleArticleActivity(article.id, 'click')}>Read Full ↗</a>
@@ -1389,15 +1488,9 @@ function NewsFeed() {
                 {authError && <div className={`p-3 mb-4 text-sm rounded-lg ${authError.includes('successful') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>{authError}</div>}
                 <form onSubmit={handleAuthSubmit} className="space-y-4">
                   {authMode === "signup" && (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                      <input type="text" required value={authName} onChange={(e) => setAuthName(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="John Doe"/>
-                    </div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label><input type="text" required value={authName} onChange={(e) => setAuthName(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="John Doe"/></div>
                   )}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                    <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="you@example.com"/>
-                  </div>
+                  <div><label className="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="you@example.com"/></div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                     <div className="relative">
