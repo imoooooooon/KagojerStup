@@ -108,7 +108,6 @@ app.get('/api/news/personalized', async (req, res) => {
   try {
     const { region, userId } = req.query;
 
-    // 1. Get Preferred Categories
     const [preferences] = await pool.execute(`
       SELECT na.category, COUNT(*) as interaction_count
       FROM user_activity ua
@@ -121,7 +120,6 @@ app.get('/api/news/personalized', async (req, res) => {
 
     const preferredCategories = preferences.map(p => p.category);
 
-    // 2. Get Followed Sources (FEATURE 7 FIX)
     const [follows] = await pool.execute(`
       SELECT ns.source_name 
       FROM follows f 
@@ -178,18 +176,15 @@ app.get('/api/news/personalized', async (req, res) => {
       finalScore = Math.max(0, Math.min(100, finalScore));
 
       let personalSortWeight = finalScore; 
-      
-      // Category Boost
       if (preferredCategories.includes(row.category)) {
         personalSortWeight += 50; 
       }
 
-      // Followed Source Boost (FEATURE 7 FIX)
       const articleSources = row.all_event_sources ? row.all_event_sources.split('||') : [];
       const hasFollowedSource = articleSources.some(source => followedSourceNames.includes(source));
       
       if (hasFollowedSource) {
-        personalSortWeight += 75; // Pushes followed news straight to the top
+        personalSortWeight += 75; 
       }
 
       return {
@@ -218,10 +213,10 @@ app.get('/api/news/personalized', async (req, res) => {
 
 
 // ==========================================
-// 2. CRISIS ALERTS (FEATURE 6)
+// 2. CRISIS ALERTS & MAPS
 // ==========================================
 
-// API Endpoint: Get Active Crisis Alerts
+// API Endpoint: Get Region-Based Alerts (Passive)
 app.get('/api/alerts', async (req, res) => {
   try {
     const { region } = req.query;
@@ -249,7 +244,6 @@ app.get('/api/alerts', async (req, res) => {
       LIMIT 1; 
     `;
 
-    // Using pool.query here because it handles arrays for 'IN (?)' better
     const [rows] = await pool.query(sqlQuery, [region, crisisCategories]);
     res.json(rows);
   } catch (error) {
@@ -258,12 +252,64 @@ app.get('/api/alerts', async (req, res) => {
   }
 });
 
+// NEW API Endpoint: Get all active crises for the Map
+app.get('/api/crises', async (req, res) => {
+  try {
+    const query = `
+      SELECT ce.*, na.title, na.category, na.summary 
+      FROM crisis_event ce
+      JOIN event e ON ce.event_id = e.event_id
+      JOIN news_article na ON e.event_id = na.event_id
+      WHERE ce.is_active = TRUE
+      GROUP BY ce.crisis_id
+    `;
+    const [crises] = await pool.execute(query);
+    res.json(crises);
+  } catch (error) {
+    console.error("Failed to fetch crises:", error);
+    res.status(500).json({ error: 'Failed to fetch crisis map data' });
+  }
+});
+
+// NEW API Endpoint: Check User Proximity (Active Alerts)
+app.post('/api/check-crisis-alert', async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+    if (!lat || !lng) return res.status(400).json({ error: "Missing coordinates" });
+
+    // Haversine formula to check if distance is <= radius
+    const query = `
+      SELECT ce.crisis_id, ce.crisis_type, ce.severity_level, ce.radius_km, na.title, na.summary,
+        ( 6371 * acos( cos( radians(?) ) * cos( radians( ce.latitude ) ) * 
+        cos( radians( ce.longitude ) - radians(?) ) + sin( radians(?) ) * 
+        sin( radians( ce.latitude ) ) ) ) AS distance 
+      FROM crisis_event ce
+      JOIN event e ON ce.event_id = e.event_id
+      JOIN news_article na ON e.event_id = na.event_id
+      WHERE ce.is_active = TRUE
+      HAVING distance <= ce.radius_km
+      ORDER BY distance ASC
+      LIMIT 1
+    `;
+
+    const [alerts] = await pool.execute(query, [lat, lng, lat]);
+
+    if (alerts.length > 0) {
+      res.json({ inDangerZone: true, alert: alerts[0] });
+    } else {
+      res.json({ inDangerZone: false });
+    }
+  } catch (error) {
+    console.error("Crisis check failed:", error);
+    res.status(500).json({ error: 'Failed to calculate proximity' });
+  }
+});
+
 
 // ==========================================
 // 3. USER ACTIVITY & INTERACTIONS
 // ==========================================
 
-// API Endpoint: Submit a Vote
 app.post('/api/vote', async (req, res) => {
   try {
     const { userId, articleId, voteType } = req.body; 
@@ -291,7 +337,6 @@ app.post('/api/vote', async (req, res) => {
   }
 });
 
-// API Endpoint: Get all previous votes for a user
 app.get('/api/user-votes/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -311,7 +356,6 @@ app.get('/api/user-votes/:userId', async (req, res) => {
   }
 });
 
-// API Endpoint: Remove a Vote (Un-toggle)
 app.post('/api/remove-vote', async (req, res) => {
   try {
     const { userId, articleId } = req.body; 
@@ -326,7 +370,6 @@ app.post('/api/remove-vote', async (req, res) => {
   }
 });
 
-// API Endpoint: Track User Activity (Clicks/Reads)
 app.post('/api/track-activity', async (req, res) => {
   try {
     const { userId, articleId, activityType } = req.body;
@@ -345,25 +388,20 @@ app.post('/api/track-activity', async (req, res) => {
 // 4. FOLLOW SOURCES (FEATURE 7)
 // ==========================================
 
-// API Endpoint: Toggle Follow a News Source
 app.post('/api/follow-source', async (req, res) => {
   try {
     const { userId, sourceName } = req.body;
     
-    // Find the source_id from the name
     const [sources] = await pool.execute('SELECT source_id FROM news_source WHERE source_name = ?', [sourceName]);
     if (sources.length === 0) return res.status(404).json({ error: 'Source not found' });
     const sourceId = sources[0].source_id;
 
-    // Check if the user is already following this source
     const [exists] = await pool.execute('SELECT * FROM follows WHERE user_id = ? AND source_id = ?', [userId, sourceId]);
     
     if (exists.length > 0) {
-      // Unfollow
       await pool.execute('DELETE FROM follows WHERE user_id = ? AND source_id = ?', [userId, sourceId]);
       res.json({ message: 'Unfollowed successfully', isFollowing: false });
     } else {
-      // Follow
       await pool.execute('INSERT INTO follows (user_id, source_id) VALUES (?, ?)', [userId, sourceId]);
       res.json({ message: 'Followed successfully', isFollowing: true });
     }
@@ -373,7 +411,6 @@ app.post('/api/follow-source', async (req, res) => {
   }
 });
 
-// API Endpoint: Get User's Followed Sources
 app.get('/api/user-follows/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -396,7 +433,6 @@ app.get('/api/user-follows/:userId', async (req, res) => {
 // 5. AUTHENTICATION
 // ==========================================
 
-// API Endpoint: User Signup
 app.post('/api/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -421,7 +457,6 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// API Endpoint: User Login
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -455,7 +490,6 @@ app.post('/api/login', async (req, res) => {
 // 6. ADMIN & UTILS
 // ==========================================
 
-// API Endpoint: Manual AI Trigger
 app.post('/api/trigger-ai', async (req, res) => {
   try {
     const count = await processNewArticles(pool);
@@ -469,7 +503,6 @@ app.post('/api/trigger-ai', async (req, res) => {
     res.status(500).json({ error: "Failed to process articles." });
   }
 });
-
 
 const PORT = process.env.PORT || 5000; 
 app.listen(PORT, () => {
