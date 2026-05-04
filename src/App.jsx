@@ -46,6 +46,13 @@ const ThumbsDownIcon = ({ className }) => (
   </svg>
 );
 
+// New Alert Icon for Feature 6
+const AlertTriangleIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
+
 // Helper function to format date and time
 const formatDateTime = (dateString) => {
   if (!dateString) return "Unknown Date";
@@ -69,6 +76,10 @@ function NewsFeed() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeSource, setActiveSource] = useState("All");
   
+  // Alert & Location State (Feature 6)
+  const [activeAlert, setActiveAlert] = useState(null);
+  const [isLocating, setIsLocating] = useState(false);
+  
   // State to track which articles have their summaries expanded
   const [expandedSummaries, setExpandedSummaries] = useState({});
   
@@ -85,6 +96,7 @@ function NewsFeed() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login"); 
   const [localVotes, setLocalVotes] = useState({});
+  const [followedSources, setFollowedSources] = useState([]);
   
   // Form State
   const [authName, setAuthName] = useState("");
@@ -131,25 +143,60 @@ function NewsFeed() {
     fetchNews();
   }, [activeRegion, currentUser]); 
 
+  // Check for Crisis Alerts every 30 seconds based on the active region
   useEffect(() => {
-    const fetchUserVotes = async () => {
+    const checkAlerts = async () => {
+      if (activeRegion === 'All') {
+        setActiveAlert(null);
+        return;
+      }
+      try {
+        const response = await fetch(`https://kagojerstup.onrender.com/api/alerts?region=${activeRegion}`);
+        const data = await response.json();
+        if (data && data.length > 0) {
+          setActiveAlert(data[0]);
+        } else {
+          setActiveAlert(null);
+        }
+      } catch (error) {
+        console.error("Failed to check alerts:", error);
+      }
+    };
+
+    checkAlerts(); // Check immediately
+    const intervalId = setInterval(checkAlerts, 30000); // Then every 30 secs
+
+    return () => clearInterval(intervalId); // Cleanup on unmount
+  }, [activeRegion]);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
       if (!currentUser) {
         setLocalVotes({}); 
+        setFollowedSources([]);
         return;
       }
 
       try {
-        const response = await fetch(`https://kagojerstup.onrender.com/api/user-votes/${currentUser.userId}`);
-        if (response.ok) {
-          const pastVotes = await response.json();
+        // Fetch Votes
+        const voteRes = await fetch(`https://kagojerstup.onrender.com/api/user-votes/${currentUser.userId}`);
+        if (voteRes.ok) {
+          const pastVotes = await voteRes.json();
           setLocalVotes(pastVotes); 
         } 
+
+        // Fetch Followed Sources
+        const followRes = await fetch(`https://kagojerstup.onrender.com/api/user-follows/${currentUser.userId}`);
+        if (followRes.ok) {
+          const follows = await followRes.json();
+          setFollowedSources(follows);
+        }
       } catch (error) {
-        console.error("Failed to load past votes:", error);
+        console.error("Failed to load user data:", error);
       }
     };
 
-    fetchUserVotes();
+    fetchUserData();
   }, [currentUser]);
 
   const handleAuthSubmit = async (e) => {
@@ -299,6 +346,81 @@ function NewsFeed() {
     }
   };
 
+  const handleLiveLocation = () => {
+    setIsLocating(true);
+    
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      setIsLocating(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        
+        // Use a free reverse-geocoding API to get the city name
+        const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+        const data = await response.json();
+        
+        const city = data.city || data.locality || "Dhaka"; // Fallback to Dhaka
+        
+        // Check if the detected city is in your dropdown list
+        const validRegions = ["Dhaka", "Chattogram", "Sylhet", "Sunamganj", "Narsingdi", "Narayanganj", "Banani", "Mirpur", "Cox's Bazar", "Netrokona", "Gaibandha", "Keraniganj"];
+        
+        if (validRegions.includes(city)) {
+          setActiveRegion(city);
+          alert(`Location detected: ${city}. Updating feed!`);
+        } else {
+          // If they are outside of your covered regions, default to Dhaka or show an error
+          alert(`We detected you are in ${city}, but we currently only cover specific regions. Defaulting to Dhaka.`);
+          setActiveRegion("Dhaka");
+        }
+      } catch (error) {
+        console.error("Location error:", error);
+        alert("Failed to determine location.");
+      } finally {
+        setIsLocating(false);
+      }
+    }, (error) => {
+      alert("Please allow location permissions in your browser.");
+      setIsLocating(false);
+    });
+  };
+
+  const handleFollowToggle = async (sourceName) => {
+    if (!currentUser) {
+      setAuthMode("login");
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    // Optimistic UI update
+    const isCurrentlyFollowing = followedSources.includes(sourceName);
+    if (isCurrentlyFollowing) {
+      setFollowedSources(prev => prev.filter(s => s !== sourceName));
+    } else {
+      setFollowedSources(prev => [...prev, sourceName]);
+    }
+
+    try {
+      await fetch('https://kagojerstup.onrender.com/api/follow-source', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.userId, sourceName })
+      });
+    } catch (error) {
+      console.error("Follow toggle failed:", error);
+      // Revert on failure
+      if (isCurrentlyFollowing) {
+        setFollowedSources(prev => [...prev, sourceName]);
+      } else {
+        setFollowedSources(prev => prev.filter(s => s !== sourceName));
+      }
+    }
+  };
+
   // Function to toggle the expanded state of a specific summary
   const toggleSummary = (articleId) => {
     setExpandedSummaries(prev => ({
@@ -371,6 +493,26 @@ function NewsFeed() {
           </div>
         </nav>
 
+        {/* --- CRISIS ALERT BANNER --- */}
+        {activeAlert && (
+          <div className="bg-red-600 text-white w-full py-3 px-4 shadow-lg flex justify-between items-center z-50 animate-pulse">
+            <div className="max-w-7xl mx-auto flex items-center gap-3 w-full">
+              <AlertTriangleIcon className="w-6 h-6 flex-shrink-0 text-red-200" />
+              <div>
+                <span className="font-extrabold uppercase tracking-widest text-red-200 text-xs block mb-0.5">
+                  CRISIS ALERT: {activeAlert.region}
+                </span>
+                <span className="font-semibold text-sm sm:text-base">
+                  {activeAlert.title}
+                </span>
+              </div>
+            </div>
+            <button onClick={() => setActiveAlert(null)} className="text-white hover:text-red-200 ml-4 font-bold">
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Hero Section */}
         <header className="relative pt-20 pb-24 overflow-hidden bg-white">
           <div className="absolute inset-0 bg-[radial-gradient(#E2E8F0_1px,transparent_1px)] [background-size:16px_16px] opacity-30"></div>
@@ -403,7 +545,7 @@ function NewsFeed() {
                       <select 
                         value={activeRegion}
                         onChange={(e) => setActiveRegion(e.target.value)}
-                        className="block w-full pl-10 pr-10 py-3 border border-[#E2E8F0] rounded-lg leading-5 bg-[#F8FAFC] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] focus:bg-white transition-all sm:text-sm font-medium appearance-none cursor-pointer"
+                        className="block w-full pl-10 pr-12 py-3 border border-[#E2E8F0] rounded-lg leading-5 bg-[#F8FAFC] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] focus:bg-white transition-all sm:text-sm font-medium appearance-none cursor-pointer"
                         aria-label="Your location"
                       >
                         <option value="All">All Bangladesh</option>
@@ -420,6 +562,14 @@ function NewsFeed() {
                         <option value="Gaibandha">Gaibandha</option>
                         <option value="Keraniganj">Keraniganj</option>
                       </select>
+                      <button 
+                        onClick={handleLiveLocation}
+                        disabled={isLocating}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-100 hover:bg-blue-200 text-blue-700 p-1.5 rounded-md transition-colors"
+                        title="Use My Live Location"
+                      >
+                        {isLocating ? '...' : '📍'}
+                      </button>
                     </div>
                     <a href="#live-feed" className="flex-shrink-0 bg-[#2563EB] hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all shadow-md shadow-blue-200 focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 flex justify-center items-center gap-2">
                       <SearchIcon className="w-5 h-5" /> Explore Local News
@@ -611,16 +761,32 @@ function NewsFeed() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-4">
                         <span className="text-xs text-slate-500 font-medium">Sources:</span>
-                        {news.sources.map((source, idx) => (
-                          <button 
-                            key={idx} 
-                            onClick={() => setActiveSource(source)}
-                            className="text-xs font-semibold text-[#0F172A] bg-slate-100 hover:bg-blue-100 hover:text-blue-700 px-2 py-0.5 rounded transition-colors cursor-pointer relative z-10"
-                            title={`Filter by ${source}`}
-                          >
-                            {source}
-                          </button>
-                        ))}
+                        {news.sources.map((source, idx) => {
+                          const isFollowed = followedSources.includes(source);
+                          return (
+                            <div key={idx} className="flex items-center bg-slate-100 rounded overflow-hidden shadow-sm relative z-10">
+                              <button 
+                                onClick={() => setActiveSource(source)}
+                                className="text-xs font-semibold text-[#0F172A] hover:bg-blue-100 hover:text-blue-700 px-2 py-1 transition-colors cursor-pointer"
+                                title={`Filter by ${source}`}
+                              >
+                                {source}
+                              </button>
+                              
+                              {/* The Follow/Unfollow Star Button */}
+                              <button
+                                onClick={() => handleFollowToggle(source)}
+                                className={`px-2 py-1 text-xs border-l border-white transition-colors cursor-pointer 
+                                  ${isFollowed 
+                                    ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
+                                    : 'bg-slate-200 text-slate-400 hover:bg-slate-300 hover:text-slate-600'}`}
+                                title={isFollowed ? "Unfollow this source" : "Follow this source"}
+                              >
+                                ★
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                       
                       {/* Interaction Footer: Time & Voting */}
