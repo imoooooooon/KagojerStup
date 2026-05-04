@@ -184,7 +184,9 @@ app.get('/api/news/personalized', async (req, res) => {
       
       // Boost 1: Category Match (More clicks = higher boost)
       if (preferredCategories[row.category]) {
-        personalSortWeight += (preferredCategories[row.category] * 10); 
+        // THE FIX: Cap the category boost at 40 points. 
+        // Without this Math.min limit, clicking a category 50 times adds 500 points and permanently breaks the feed!
+        personalSortWeight += Math.min(preferredCategories[row.category] * 10, 40); 
       }
 
       // Boost 2: Followed Source Match
@@ -621,6 +623,10 @@ app.delete('/api/bookmarks/:userId/:articleId', async (req, res) => {
   try {
     const { userId, articleId } = req.params;
     await pool.execute('DELETE FROM bookmarks WHERE user_id = ? AND article_id = ?', [userId, articleId]);
+    
+    // NEW FIX: Delete the hidden activity history so the algorithm actually forgets it!
+    await pool.execute("DELETE FROM user_activity WHERE user_id = ? AND article_id = ? AND activity_type = 'bookmark'", [userId, articleId]);
+    
     res.json({ message: 'Bookmark removed successfully' });
   } catch (error) {
     console.error(error);
