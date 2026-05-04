@@ -108,6 +108,7 @@ function NewsFeed() {
   // Filter States
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeSource, setActiveSource] = useState("All");
+  const [searchQuery, setSearchQuery] = useState(""); // NEW: Search state
   
   // Alert & Map State (Feature 6 & 8)
   const [activeAlert, setActiveAlert] = useState(null); 
@@ -155,6 +156,7 @@ function NewsFeed() {
         
         setActiveCategory("All");
         setActiveSource("All");
+        setSearchQuery(""); // Clear search when switching regions
         setExpandedSummaries({});
         setIsLoading(false);
       } catch (error) {
@@ -389,10 +391,18 @@ function NewsFeed() {
   const uniqueCategories = ["All", ...new Set(newsFeed.map(item => item.category).filter(Boolean))];
   const uniqueSources = ["All", ...new Set(newsFeed.flatMap(item => item.sources).filter(Boolean))];
 
+  // --- NEW: Filter Logic (includes search query) ---
   const filteredFeed = newsFeed.filter(news => {
     const matchCategory = activeCategory === 'All' || news.category === activeCategory;
     const matchSource = activeSource === 'All' || news.sources.includes(activeSource);
-    return matchCategory && matchSource;
+    
+    // Check if the search query matches the title or the summary
+    const query = searchQuery.toLowerCase();
+    const matchSearch = searchQuery === "" || 
+      (news.title && news.title.toLowerCase().includes(query)) || 
+      (news.summary && news.summary.toLowerCase().includes(query));
+
+    return matchCategory && matchSource && matchSearch;
   });
 
   return (
@@ -501,6 +511,7 @@ function NewsFeed() {
                   Stop scrolling through global noise. Get instantly ranked news based on your location, verified by cross-referencing multiple trusted sources for uncompromised credibility.
                 </p>
                 
+                {/* Location Input & CTAs */}
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row gap-3 max-w-lg">
                     <div className="relative flex-grow group">
@@ -511,6 +522,7 @@ function NewsFeed() {
                         value={activeRegion}
                         onChange={(e) => setActiveRegion(e.target.value)}
                         className="block w-full pl-10 pr-12 py-3 border border-[#E2E8F0] rounded-lg leading-5 bg-[#F8FAFC] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] focus:bg-white transition-all sm:text-sm font-medium appearance-none cursor-pointer"
+                        aria-label="Your location"
                       >
                         <option value="All">All Bangladesh</option>
                         <option value="Dhaka">Dhaka</option>
@@ -539,6 +551,11 @@ function NewsFeed() {
                       <SearchIcon className="w-5 h-5" /> Explore Local News
                     </a>
                   </div>
+                  <div className="flex items-center gap-4 text-sm font-medium">
+                    <a href="#credibility" className="text-[#64748B] hover:text-[#0F172A] transition-colors flex items-center gap-1">
+                      <ShieldCheckIcon className="w-4 h-4" /> Learn how we score credibility
+                    </a>
+                  </div>
                 </div>
               </div>
 
@@ -560,6 +577,15 @@ function NewsFeed() {
                   <p className="text-[#64748B] mb-6 line-clamp-2">
                     Authorities announce extended night operations for Line 6 starting next month to accommodate growing commuter demand in the capital, following multiple successful trials.
                   </p>
+                  <div className="pt-4 border-t border-[#E2E8F0] flex justify-between items-center">
+                    <div className="flex -space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-600">DS</div>
+                      <div className="w-8 h-8 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-700">DT</div>
+                    </div>
+                    <span className="text-xs font-semibold text-[#64748B] flex items-center gap-1">
+                      <ClockIcon className="w-3.5 h-3.5" /> Just updated
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -570,20 +596,45 @@ function NewsFeed() {
         {/* Feature 3: Live News Preview */}
         <section id="live-feed" className="py-20 bg-[#F8FAFC] border-t border-[#E2E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 gap-6">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#0F172A] mb-2">Live News Stream</h2>
                 <p className="text-[#64748B]">Ranked for: <strong className="text-[#0F172A]">{activeRegion === 'All' ? 'Bangladesh (National)' : activeRegion}</strong></p>
               </div>
               
+              {/* Filter Dropdowns */}
               <div className="flex flex-wrap gap-3 w-full lg:w-auto">
-                <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)} className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#2563EB] cursor-pointer shadow-sm">
+                
+                {/* NEW: Keyword Search Input */}
+                <div className="relative flex-grow md:flex-grow-0 w-full md:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <SearchIcon className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search keywords..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-9 pr-3 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] shadow-sm transition-colors"
+                  />
+                </div>
+
+                <select 
+                  value={activeCategory}
+                  onChange={(e) => setActiveCategory(e.target.value)}
+                  className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
+                >
                   {uniqueCategories.map(category => (
                     <option key={category} value={category}>{category === 'All' ? 'All Categories' : category}</option>
                   ))}
                 </select>
 
-                <select value={activeSource} onChange={(e) => setActiveSource(e.target.value)} className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#2563EB] cursor-pointer shadow-sm">
+                <select 
+                  value={activeSource}
+                  onChange={(e) => setActiveSource(e.target.value)}
+                  className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
+                >
                   {uniqueSources.map(source => (
                     <option key={source} value={source}>{source === 'All' ? 'All Portals' : source}</option>
                   ))}
@@ -599,6 +650,19 @@ function NewsFeed() {
               ) : filteredFeed.length === 0 ? (
                 <div className="col-span-full py-12 text-center bg-white border border-[#E2E8F0] rounded-xl">
                   <p className="text-[#64748B] text-lg font-medium">No articles found matching your filters for {activeRegion}.</p>
+                  {/* Clear Filters Button appears if any filter or search is active */}
+                  {(activeCategory !== 'All' || activeSource !== 'All' || searchQuery !== "") && (
+                    <button 
+                      onClick={() => {
+                        setActiveCategory('All'); 
+                        setActiveSource('All');
+                        setSearchQuery("");
+                      }} 
+                      className="mt-4 text-[#2563EB] font-semibold hover:underline focus:outline-none"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
                 </div>
               ) : (
                 filteredFeed.map((news) => (
@@ -612,7 +676,9 @@ function NewsFeed() {
                           </span>
                         </div>
                         <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-md border transition-colors
-                          ${news.score >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : news.score >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-red-50 text-red-800 border-red-200'}`}>
+                          ${news.score >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 
+                            news.score >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 
+                            'bg-red-50 text-red-800 border-red-200'}`}>
                           <ShieldCheckIcon className="w-3.5 h-3.5" /> {news.score}% Trust Score
                         </div>
                       </div>
@@ -628,7 +694,10 @@ function NewsFeed() {
                           {news.summary}
                         </p>
                         {news.summary && news.summary.length > 100 && (
-                          <button onClick={(e) => { e.preventDefault(); toggleSummary(news.id); }} className="mt-2 text-xs font-bold text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer">
+                          <button 
+                            onClick={(e) => { e.preventDefault(); toggleSummary(news.id); }}
+                            className="mt-2 text-xs font-bold text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+                          >
                             <span>✨</span> {expandedSummaries[news.id] ? 'Hide Summary' : 'Read AI Summary'}
                           </button>
                         )}
@@ -642,10 +711,17 @@ function NewsFeed() {
                           const isFollowed = followedSources.includes(source);
                           return (
                             <div key={idx} className="flex items-center bg-slate-100 rounded overflow-hidden shadow-sm relative z-10">
-                              <button onClick={() => setActiveSource(source)} className="text-xs font-semibold text-[#0F172A] hover:bg-blue-100 hover:text-blue-700 px-2 py-1 transition-colors">
+                              <button 
+                                onClick={() => setActiveSource(source)}
+                                className="text-xs font-semibold text-[#0F172A] hover:bg-blue-100 hover:text-blue-700 px-2 py-1 transition-colors"
+                              >
                                 {source}
                               </button>
-                              <button onClick={() => handleFollowToggle(source)} className={`px-2 py-1 text-xs border-l border-white transition-colors cursor-pointer ${isFollowed ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-slate-200 text-slate-400 hover:bg-slate-300 hover:text-slate-600'}`}>
+                              <button
+                                onClick={() => handleFollowToggle(source)}
+                                className={`px-2 py-1 text-xs border-l border-white transition-colors cursor-pointer 
+                                  ${isFollowed ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-slate-200 text-slate-400 hover:bg-slate-300 hover:text-slate-600'}`}
+                              >
                                 ★
                               </button>
                             </div>
@@ -659,10 +735,16 @@ function NewsFeed() {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-slate-400 font-medium mr-1">Verify:</span>
-                          <button onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_real'); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_real' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                          <button 
+                            onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_real'); }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_real' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+                          >
                             <ThumbsUpIcon className="w-4 h-4" /> Real 
                           </button>
-                          <button onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_fake'); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_fake' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                          <button 
+                            onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_fake'); }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_fake' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+                          >
                             <ThumbsDownIcon className="w-4 h-4" /> Fake 
                           </button>
                         </div>
@@ -883,6 +965,7 @@ function NewsFeed() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row items-center gap-16">
               <div className="w-full lg:w-1/2 order-2 lg:order-1">
+                {/* Visual DB Node Representation */}
                 <div className="bg-slate-50 rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
                   <div className="absolute z-10 bg-white border-2 border-[#2563EB] rounded-xl p-4 shadow-lg w-48 text-center text-sm font-bold text-[#0F172A]">
                     Event Entity: <br/> Election Results
@@ -890,6 +973,7 @@ function NewsFeed() {
                       Score: 92%
                     </div>
                   </div>
+                  {/* Source Nodes */}
                   <div className="absolute top-8 left-8 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
                      <div className="w-6 h-6 rounded bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">B</div>
                      <span className="text-xs font-semibold">BBC News</span>
@@ -920,6 +1004,7 @@ function NewsFeed() {
                 <p className="text-lg text-[#64748B]">
                   In an era of misinformation, single-source news isn't enough. Our backend algorithms map news articles to specific events and calculate a dynamic credibility score based on the weight and volume of trusted sources reporting it.
                 </p>
+                
                 <ul className="space-y-4 mt-6">
                   <li className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-1">
@@ -968,7 +1053,7 @@ function NewsFeed() {
               <ul className="space-y-2 text-sm text-slate-400">
                 <li><a href="#" className="hover:text-white transition-colors">Local News</a></li>
                 <li><a href="#credibility" className="hover:text-white transition-colors">Credibility Engine</a></li>
-                <li><a href="#news-map" className="hover:text-white transition-colors">Interactive Map</a></li>
+                <li><a href="#news-map" className="hover:text-white transition-colors">Crisis Alerts</a></li>
               </ul>
             </div>
 
@@ -980,13 +1065,23 @@ function NewsFeed() {
               </ul>
             </div>
           </div>
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-sm text-slate-500 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p>&copy; 2026 কাগজের স্তূপ. All rights reserved.</p>
+            <div className="flex gap-4">
+              <a href="#" className="hover:text-white transition-colors">Privacy</a>
+              <a href="#" className="hover:text-white transition-colors">Terms</a>
+            </div>
+          </div>
         </footer>
 
         {/* Authentication Modal */}
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
-              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">✕</button>
+              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">
+                ✕
+              </button>
               <div className="p-8">
                 <h2 className="text-2xl font-bold text-[#0F172A] mb-2">{authMode === "login" ? "Sign In required" : "Create an account"}</h2>
                 <p className="text-[#64748B] text-sm mb-6">
@@ -1007,7 +1102,14 @@ function NewsFeed() {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                     <div className="relative">
-                      <input type={showPassword ? "text" : "password"} required value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:outline-none pr-10" placeholder="••••••••"/>
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        required 
+                        value={authPassword} 
+                        onChange={(e) => setAuthPassword(e.target.value)} 
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:outline-none pr-10" 
+                        placeholder="••••••••"
+                      />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-700">
                         {showPassword ? "🙈" : "👁️"}
                       </button>
