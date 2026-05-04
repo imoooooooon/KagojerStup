@@ -75,12 +75,6 @@ const ThumbsDownIcon = ({ className }) => (
   </svg>
 );
 
-const LayersIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-  </svg>
-);
-
 const ClockIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -131,7 +125,9 @@ function NewsFeed() {
   const [trendingWindow, setTrendingWindow] = useState("24h");
   const [isTrendingLoading, setIsTrendingLoading] = useState(true);
 
+  // Interaction States
   const [expandedSummaries, setExpandedSummaries] = useState({});
+  const [translatedArticles, setTranslatedArticles] = useState({}); // NEW: Track translation state
   const [newsFeed, setNewsFeed] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -169,6 +165,7 @@ function NewsFeed() {
         setActiveSource("All");
         setSearchQuery(""); 
         setExpandedSummaries({});
+        setTranslatedArticles({}); // Reset translation states when region changes
         setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch news:", error);
@@ -315,27 +312,15 @@ function NewsFeed() {
   };
 
   const handleArticleActivity = async (articleId, type) => {
-    // Check if user is logged in before tracking bookmarks or shares
-    if (!currentUser) { 
-      setAuthMode("login"); 
-      setIsAuthModalOpen(true); 
-      return; 
-    }
-
+    if (!currentUser) { setAuthMode("login"); setIsAuthModalOpen(true); return; }
     try {
       await fetch('https://kagojerstup.onrender.com/api/track-activity', {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser.userId, articleId: articleId, activityType: type })
       });
-
-      // Provide visual feedback
       if (type === 'share') alert("Link copied/shared successfully! This boosts the trending score.");
       if (type === 'bookmark') alert("Article bookmarked successfully!");
-      
-    } catch (error) { 
-      console.error("Failed to track activity:", error); 
-    }
+    } catch (error) { console.error("Failed to track activity:", error); }
   };
 
   const handleLiveLocation = () => {
@@ -391,6 +376,11 @@ function NewsFeed() {
     setExpandedSummaries(prev => ({ ...prev, [articleId]: !prev[articleId] }));
   };
 
+  // NEW: Function to toggle translation state
+  const toggleTranslation = (articleId) => {
+    setTranslatedArticles(prev => ({ ...prev, [articleId]: !prev[articleId] }));
+  };
+
   const uniqueCategories = ["All", ...new Set(newsFeed.map(item => item.category).filter(Boolean))];
   const uniqueSources = ["All", ...new Set(newsFeed.flatMap(item => item.sources).filter(Boolean))];
 
@@ -400,7 +390,8 @@ function NewsFeed() {
     const query = searchQuery.toLowerCase();
     const matchSearch = searchQuery === "" || 
       (news.title && news.title.toLowerCase().includes(query)) || 
-      (news.summary && news.summary.toLowerCase().includes(query));
+      (news.summary && news.summary.toLowerCase().includes(query)) ||
+      (news.translation && news.translation.toLowerCase().includes(query)); // Search checks translation too!
     return matchCategory && matchSource && matchSearch;
   });
 
@@ -559,9 +550,8 @@ function NewsFeed() {
           </div>
         </header>
 
-        {/* Feature 5: Trending News Detection (Light Theme) */}
+        {/* Feature 5: Trending News Detection */}
         <section id="trending" className="py-20 bg-slate-50 border-t border-[#E2E8F0] relative overflow-hidden">
-          
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
               <div>
@@ -572,16 +562,13 @@ function NewsFeed() {
                 <p className="text-[#64748B]">Discover what the community is reading, sharing, and bookmarking right now.</p>
               </div>
 
-              {/* Time Window Filters */}
               <div className="flex bg-slate-200 p-1 rounded-lg shadow-inner">
                 {['today', '24h', '7d', '30d'].map((window) => (
                   <button
                     key={window}
                     onClick={() => setTrendingWindow(window)}
                     className={`px-4 py-2 text-sm font-bold rounded-md transition-all ${
-                      trendingWindow === window 
-                      ? 'bg-white text-[#2563EB] shadow-sm' 
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-300'
+                      trendingWindow === window ? 'bg-white text-[#2563EB] shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-300'
                     }`}
                   >
                     {window === 'today' ? 'Today' : window === '24h' ? '24 Hours' : window === '7d' ? '7 Days' : '30 Days'}
@@ -602,25 +589,18 @@ function NewsFeed() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {trendingNews.map((news, index) => (
                   <article key={news.article_id} className="bg-white rounded-2xl p-6 border border-[#E2E8F0] hover:border-[#2563EB] hover:shadow-xl hover:shadow-blue-900/5 transition-all flex flex-col justify-between relative overflow-hidden group">
-                    
-                    {/* Rank Number Badge */}
                     <div className={`absolute -right-4 -top-4 w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black opacity-30 pointer-events-none group-hover:scale-110 transition-transform ${
                       index === 0 ? 'bg-amber-100 text-amber-500' : 
                       index === 1 ? 'bg-slate-200 text-slate-500' : 
-                      index === 2 ? 'bg-orange-100 text-orange-600' : 
-                      'bg-slate-50 text-slate-300'
+                      index === 2 ? 'bg-orange-100 text-orange-600' : 'bg-slate-50 text-slate-300'
                     }`}>
                       #{index + 1}
                     </div>
 
                     <div className="relative z-10">
                       <div className="flex gap-2 mb-4">
-                        <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
-                          {news.category}
-                        </span>
-                        <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1">
-                          <MapPinIcon className="w-3 h-3"/> {news.region_name}
-                        </span>
+                        <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">{news.category}</span>
+                        <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1"><MapPinIcon className="w-3 h-3"/> {news.region_name}</span>
                       </div>
                       
                       <h3 className="text-lg font-bold text-[#0F172A] mb-3 leading-snug line-clamp-2 group-hover:text-[#2563EB] transition-colors">
@@ -629,9 +609,22 @@ function NewsFeed() {
                         </a>
                       </h3>
                       
-                      <p className="text-sm text-[#64748B] line-clamp-2 mb-4">
-                        {news.summary}
-                      </p>
+                      <div className="mb-4">
+                        <p className="text-sm text-[#64748B] line-clamp-2">
+                          {/* NEW: Use translation if active */}
+                          {translatedArticles[news.article_id] && news.translation ? news.translation : news.summary}
+                        </p>
+                        
+                        {/* NEW: Translate Button */}
+                        {news.translation && (
+                          <button 
+                            onClick={(e) => { e.preventDefault(); toggleTranslation(news.article_id); }}
+                            className="mt-2 text-xs font-bold text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
+                          >
+                            🌐 {translatedArticles[news.article_id] ? 'Show Original' : 'Translate'}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="relative z-10 mt-auto pt-4 border-t border-[#E2E8F0]">
@@ -639,31 +632,9 @@ function NewsFeed() {
                         <span className="text-xs font-semibold text-[#64748B]">Source: <strong className="text-[#0F172A]">{news.source_name}</strong></span>
                         <span className="text-[10px] font-medium text-slate-500">{formatDateTime(news.published_at)}</span>
                       </div>
-                      
-                      <div className="flex justify-between items-center bg-slate-50 rounded-xl p-3 border border-slate-100 mb-4">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-0.5">Interactions</span>
-                          <span className="text-sm font-black text-[#0F172A]">{news.total_interactions}</span>
-                        </div>
-                        <div className="flex flex-col text-right">
-                          <span className="text-[10px] uppercase tracking-wider text-[#2563EB] font-bold mb-0.5">Trend Score</span>
-                          <span className="text-sm font-black text-[#2563EB]">{news.trending_score}</span>
-                        </div>
-                      </div>
-
                       <div className="flex gap-2">
-                         <button 
-                           onClick={() => handleArticleActivity(news.article_id, 'bookmark')} 
-                           className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-xs font-bold transition-colors"
-                         >
-                           Bookmark
-                         </button>
-                         <button 
-                           onClick={() => handleArticleActivity(news.article_id, 'share')} 
-                           className="flex-1 bg-[#2563EB] hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-bold transition-colors"
-                         >
-                           Share
-                         </button>
+                         <button onClick={() => handleArticleActivity(news.article_id, 'bookmark')} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-xs font-bold transition-colors">Bookmark</button>
+                         <button onClick={() => handleArticleActivity(news.article_id, 'share')} className="flex-1 bg-[#2563EB] hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-bold transition-colors">Share</button>
                       </div>
                     </div>
                   </article>
@@ -684,7 +655,6 @@ function NewsFeed() {
               </div>
               
               <div className="flex flex-wrap gap-3 w-full lg:w-auto">
-                
                 <div className="relative flex-grow md:flex-grow-0 w-full md:w-64">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <SearchIcon className="h-4 w-4 text-slate-400" />
@@ -694,51 +664,28 @@ function NewsFeed() {
                     placeholder="Search keywords..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] shadow-sm transition-colors"
+                    className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] shadow-sm transition-colors"
                   />
                 </div>
 
-                <select 
-                  value={activeCategory}
-                  onChange={(e) => setActiveCategory(e.target.value)}
-                  className="flex-1 lg:flex-none px-4 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
-                >
-                  {uniqueCategories.map(category => (
-                    <option key={category} value={category}>{category === 'All' ? 'All Categories' : category}</option>
-                  ))}
+                <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)} className="flex-1 lg:flex-none px-4 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#2563EB] cursor-pointer shadow-sm">
+                  {uniqueCategories.map(category => (<option key={category} value={category}>{category === 'All' ? 'All Categories' : category}</option>))}
                 </select>
 
-                <select 
-                  value={activeSource}
-                  onChange={(e) => setActiveSource(e.target.value)}
-                  className="flex-1 lg:flex-none px-4 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
-                >
-                  {uniqueSources.map(source => (
-                    <option key={source} value={source}>{source === 'All' ? 'All Portals' : source}</option>
-                  ))}
+                <select value={activeSource} onChange={(e) => setActiveSource(e.target.value)} className="flex-1 lg:flex-none px-4 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#2563EB] cursor-pointer shadow-sm">
+                  {uniqueSources.map(source => (<option key={source} value={source}>{source === 'All' ? 'All Portals' : source}</option>))}
                 </select>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {isLoading ? (
-                <div className="col-span-full py-12 flex justify-center items-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div>
-                </div>
+                <div className="col-span-full py-12 flex justify-center items-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div></div>
               ) : filteredFeed.length === 0 ? (
                 <div className="col-span-full py-12 text-center bg-slate-50 border border-[#E2E8F0] rounded-xl">
-                  <p className="text-[#64748B] text-lg font-medium">No articles found matching your filters for {activeRegion}.</p>
+                  <p className="text-[#64748B] text-lg font-medium">No articles found matching your filters.</p>
                   {(activeCategory !== 'All' || activeSource !== 'All' || searchQuery !== "") && (
-                    <button 
-                      onClick={() => {
-                        setActiveCategory('All'); 
-                        setActiveSource('All');
-                        setSearchQuery("");
-                      }} 
-                      className="mt-4 text-[#2563EB] font-bold hover:underline focus:outline-none"
-                    >
-                      Clear Filters
-                    </button>
+                    <button onClick={() => {setActiveCategory('All'); setActiveSource('All'); setSearchQuery("");}} className="mt-4 text-[#2563EB] font-bold hover:underline">Clear Filters</button>
                   )}
                 </div>
               ) : (
@@ -752,10 +699,7 @@ function NewsFeed() {
                             <MapPinIcon className="w-3 h-3" /> {news.region}
                           </span>
                         </div>
-                        <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-md border transition-colors
-                          ${news.score >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 
-                            news.score >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 
-                            'bg-red-50 text-red-800 border-red-200'}`}>
+                        <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-md border transition-colors ${news.score >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : news.score >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-red-50 text-red-800 border-red-200'}`}>
                           <ShieldCheckIcon className="w-3.5 h-3.5" /> {news.score}% Trust Score
                         </div>
                       </div>
@@ -768,19 +712,24 @@ function NewsFeed() {
                       
                       <div className="mb-5 relative z-10">
                         <p className={`text-sm text-[#64748B] leading-relaxed transition-all duration-300 ${expandedSummaries[news.id] ? '' : 'line-clamp-2'}`}>
-                          {news.summary}
+                          {/* NEW: Show Translation if Toggled */}
+                          {translatedArticles[news.id] && news.translation ? news.translation : news.summary}
                         </p>
-                        {news.summary && news.summary.length > 100 && (
-                          <button 
-                            onClick={(e) => {
-                              e.preventDefault(); 
-                              toggleSummary(news.id);
-                            }}
-                            className="mt-2 text-xs font-bold text-[#2563EB] bg-blue-100/50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <span>✨</span> {expandedSummaries[news.id] ? 'Hide Summary' : 'Read AI Summary'}
-                          </button>
-                        )}
+                        
+                        <div className="flex gap-2 mt-2">
+                          {news.summary && news.summary.length > 100 && (
+                            <button onClick={(e) => { e.preventDefault(); toggleSummary(news.id); }} className="text-xs font-bold text-[#2563EB] bg-blue-100/50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5">
+                              <span>✨</span> {expandedSummaries[news.id] ? 'Hide Summary' : 'Read AI Summary'}
+                            </button>
+                          )}
+                          
+                          {/* NEW: Translation Button */}
+                          {news.translation && (
+                            <button onClick={(e) => { e.preventDefault(); toggleTranslation(news.id); }} className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5">
+                              🌐 {translatedArticles[news.id] ? 'Show Original' : 'Translate'}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -791,21 +740,8 @@ function NewsFeed() {
                           const isFollowed = followedSources.includes(source);
                           return (
                             <div key={idx} className="flex items-center bg-white border border-[#E2E8F0] rounded overflow-hidden shadow-sm relative z-10">
-                              <button 
-                                onClick={() => setActiveSource(source)}
-                                className="text-xs font-semibold text-[#0F172A] hover:bg-blue-50 hover:text-blue-700 px-2 py-1 transition-colors"
-                              >
-                                {source}
-                              </button>
-                              <button
-                                onClick={() => handleFollowToggle(source)}
-                                className={`px-2 py-1 text-xs border-l border-[#E2E8F0] transition-colors cursor-pointer 
-                                  ${isFollowed 
-                                    ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
-                                    : 'bg-slate-50 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
-                              >
-                                ★
-                              </button>
+                              <button onClick={() => setActiveSource(source)} className="text-xs font-semibold text-[#0F172A] hover:bg-blue-50 hover:text-blue-700 px-2 py-1 transition-colors">{source}</button>
+                              <button onClick={() => handleFollowToggle(source)} className={`px-2 py-1 text-xs border-l border-[#E2E8F0] transition-colors cursor-pointer ${isFollowed ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}>★</button>
                             </div>
                           );
                         })}
@@ -817,22 +753,10 @@ function NewsFeed() {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-slate-400 font-medium mr-1">Verify:</span>
-                          <button 
-                            onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_real'); }}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border
-                              ${localVotes[news.id] === 'vote_real' 
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
-                                : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}
-                          >
+                          <button onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_real'); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_real' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}>
                             <ThumbsUpIcon className="w-4 h-4" /> Real 
                           </button>
-                          <button 
-                            onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_fake'); }}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border
-                              ${localVotes[news.id] === 'vote_fake' 
-                                ? 'bg-red-100 text-red-800 border-red-300' 
-                                : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}
-                          >
+                          <button onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_fake'); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_fake' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}>
                             <ThumbsDownIcon className="w-4 h-4" /> Fake 
                           </button>
                         </div>
@@ -854,30 +778,17 @@ function NewsFeed() {
                   <MapPinIcon className="w-6 h-6 text-[#2563EB]" />
                   <h2 className="text-3xl font-extrabold text-[#0F172A]">Interactive News Map</h2>
                 </div>
-                <p className="text-[#64748B]">
-                  Click on a <strong className="text-blue-600">blue pin</strong> for breaking news, a <strong className="text-red-600">red pin</strong> for active crises, and see the <strong className="text-emerald-600">green pin</strong> for your live location.
-                </p>
+                <p className="text-[#64748B]">Click on a <strong className="text-blue-600">blue pin</strong> for breaking news, a <strong className="text-red-600">red pin</strong> for active crises, and see the <strong className="text-emerald-600">green pin</strong> for your live location.</p>
               </div>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-6 h-auto lg:h-[600px] w-full">
-              
               <div className="w-full lg:w-2/3 h-[400px] lg:h-full rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-md relative z-10 bg-slate-100">
-                <MapContainer 
-                  center={[23.6850, 90.3563]} 
-                  zoom={7} 
-                  scrollWheelZoom={true} 
-                  style={{ height: "100%", width: "100%", zIndex: 1 }}
-                >
+                <MapContainer center={[23.6850, 90.3563]} zoom={7} scrollWheelZoom={true} style={{ height: "100%", width: "100%", zIndex: 1 }}>
                   <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   
                   {mapNews.map((regionData) => (
-                    <Marker 
-                      key={regionData.region} 
-                      position={[regionData.lat, regionData.lng]} 
-                      icon={newsIcon}
-                      eventHandlers={{ click: () => { setSelectedRegionForSidebar(regionData); } }}
-                    >
+                    <Marker key={regionData.region} position={[regionData.lat, regionData.lng]} icon={newsIcon} eventHandlers={{ click: () => { setSelectedRegionForSidebar(regionData); } }}>
                       <Popup>
                         <div className="p-1 min-w-[200px]">
                           <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">{regionData.region}</span>
@@ -899,22 +810,13 @@ function NewsFeed() {
                           </div>
                         </Popup>
                       </Marker>
-                      <Circle 
-                        center={[crisis.latitude, crisis.longitude]} 
-                        radius={crisis.radius_km * 1000} 
-                        pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.1, weight: 1 }}
-                      />
+                      <Circle center={[crisis.latitude, crisis.longitude]} radius={crisis.radius_km * 1000} pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.1, weight: 1 }} />
                     </React.Fragment>
                   ))}
 
                   {userLocation && (
                     <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
-                      <Popup>
-                        <div className="p-1 text-center">
-                          <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">You are here</span>
-                          <h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4>
-                        </div>
-                      </Popup>
+                      <Popup><div className="p-1 text-center"><span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">You are here</span><h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4></div></Popup>
                     </Marker>
                   )}
                 </MapContainer>
@@ -941,7 +843,22 @@ function NewsFeed() {
                           <a href={article.url} target="_blank" rel="noopener noreferrer" className="block group" onClick={() => handleArticleActivity(article.id, 'click')}>
                             <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-3">{article.title}</h4>
                           </a>
-                          <p className="text-xs text-[#64748B] line-clamp-2 mb-3">{article.summary}</p>
+                          
+                          <p className="text-xs text-[#64748B] line-clamp-2 mb-2">
+                             {/* Map sidebar translation check */}
+                             {translatedArticles[article.id] && article.translation ? article.translation : article.summary}
+                          </p>
+
+                          {/* Map sidebar translate button */}
+                          {article.translation && (
+                            <button 
+                              onClick={(e) => { e.preventDefault(); toggleTranslation(article.id); }}
+                              className="mb-3 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded transition-colors"
+                            >
+                              🌐 {translatedArticles[article.id] ? 'Original' : 'Translate'}
+                            </button>
+                          )}
+
                           <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
                             <span className="text-xs font-semibold text-slate-500">Source: <span className="text-slate-700">{article.source}</span></span>
                             <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#2563EB] hover:underline" onClick={() => handleArticleActivity(article.id, 'click')}>Read Full ↗</a>
@@ -964,7 +881,7 @@ function NewsFeed() {
         </section>
 
         {/* Feature 1: Region-Based News Ranking */}
-        <section id="geo-ranking" className="py-20 bg-white border-t border-[#E2E8F0]">
+        <section id="geo-ranking" className="py-20 bg-slate-50 border-t border-[#E2E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl mb-4">Your world, centered around you.</h2>
@@ -973,19 +890,19 @@ function NewsFeed() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
               <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-blue-200 via-slate-200 to-slate-200 -z-10 transform -translate-y-1/2"></div>
-              <article className="bg-[#F8FAFC] rounded-2xl shadow-sm border border-[#2563EB] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md">
+              <article className="bg-white rounded-2xl shadow-sm border border-[#2563EB] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md">
                 <div className="absolute -top-4 left-6 bg-[#2563EB] text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1"><MapPinIcon className="w-3 h-3" /> Priority 1: Local</div>
                 <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">Dhaka</span> • 2km away</div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">Water logging alert in Dhanmondi</h3>
                 <p className="text-sm text-[#64748B]">Heavy rainfall has caused severe water logging. Avoid Road 27 if possible.</p>
               </article>
-              <article className="bg-[#F8FAFC] rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-95">
+              <article className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-95">
                 <div className="absolute -top-4 left-6 bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">Priority 2: National</div>
                 <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">Bangladesh</span> • Regional</div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">New Taxation Policy Announced</h3>
                 <p className="text-sm text-[#64748B]">The NBR has updated the fiscal year tax brackets for individual taxpayers.</p>
               </article>
-              <article className="bg-[#F8FAFC] rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-75">
+              <article className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-75">
                 <div className="absolute -top-4 left-6 bg-slate-300 text-slate-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">Priority 3: Global</div>
                 <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">International</span> • Global</div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">European Markets Close Higher</h3>
@@ -996,11 +913,11 @@ function NewsFeed() {
         </section>
 
         {/* Feature 2: Source Credibility Scoring */}
-        <section id="credibility" className="py-20 bg-[#F8FAFC]">
+        <section id="credibility" className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row items-center gap-16">
               <div className="w-full lg:w-1/2 order-2 lg:order-1">
-                <div className="bg-white rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
+                <div className="bg-slate-50 rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
                   <div className="absolute z-10 bg-white border-2 border-[#2563EB] rounded-xl p-4 shadow-lg w-48 text-center text-sm font-bold text-[#0F172A]">
                     Event Entity: <br/> Election Results
                     <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs border border-emerald-200">Score: 92%</div>

@@ -32,14 +32,19 @@ async function analyzeWithGemini(articleText) {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = `
-    You are an expert news analyst. 
+    You are an expert news analyst and translator. 
     Read the following article and extract the data strictly as a raw JSON object.
     Do NOT wrap the response in markdown blocks (like \`\`\`json). Just output the raw JSON data.
+    
+    Rules for translation:
+    - If the article is written in English, translate your summary into Bengali.
+    - If the article is written in Bengali, translate your summary into English.
     
     Format:
     {
       "title": "Main headline",
-      "summary": "A strict 2-sentence summary",
+      "summary": "A strict 2-sentence summary in the original language of the article",
+      "translation": "The 2-sentence summary translated into the other language (English to Bengali OR Bengali to English)",
       "category": "Choose one: Politics, Weather, Tech, Crime, Business, Sports, Local, General",
       "region_name": "The specific district or city (e.g., 'Dhaka', 'Sylhet', 'Chattogram'). If nationwide or international, output 'All'"
     }
@@ -56,10 +61,10 @@ async function analyzeWithGemini(articleText) {
   return JSON.parse(rawText);
 }
 
-// 3. The Main Execution Loop (Updated for Frontend Button)
+// 3. The Main Execution Loop
 export async function processNewArticles(pool) {
   console.log("🤖 Starting AI News Processor...");
-  let processedCount = 0; // Track successful updates
+  let processedCount = 0; 
   
   try {
     const [unprocessedArticles] = await pool.execute(
@@ -73,7 +78,6 @@ export async function processNewArticles(pool) {
        LIMIT 5`
     );
 
-    // If database is clean, report back 0 immediately
     if (unprocessedArticles.length === 0) {
       console.log("✅ No new articles to process right now.");
       return 0; 
@@ -93,23 +97,24 @@ export async function processNewArticles(pool) {
       const aiData = await analyzeWithGemini(rawText);
       console.log("✨ Gemini Output:", aiData);
 
+      // NEW: Added translation to the UPDATE query
       await pool.execute(
         `UPDATE news_article 
-         SET title = ?, summary = ?, category = ? 
+         SET title = ?, summary = ?, translation = ?, category = ? 
          WHERE article_id = ?`,
-        [aiData.title, aiData.summary, aiData.category, article.article_id]
+        [aiData.title, aiData.summary, aiData.translation, aiData.category, article.article_id]
       );
       
       console.log(`✅ Successfully updated database for article ${article.article_id}`);
-      processedCount++; // Increment our counter
+      processedCount++; 
       
       await new Promise(resolve => setTimeout(resolve, 3000)); 
     }
     
-    return processedCount; // Return the final tally to the frontend
+    return processedCount; 
     
   } catch (error) {
     console.error("Pipeline Error:", error);
-    throw error; // Pass the error back up to server.js
+    throw error; 
   }
 }

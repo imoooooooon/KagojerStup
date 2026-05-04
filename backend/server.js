@@ -39,7 +39,8 @@ app.get('/api/news', async (req, res) => {
         na.article_id AS id, 
         na.title, 
         na.article_url AS url,
-        na.summary, 
+        na.summary,
+        na.translation, 
         na.category, 
         na.published_at AS time,
         r.region_name AS region,
@@ -85,6 +86,7 @@ app.get('/api/news', async (req, res) => {
         title: row.title,
         url: row.url,
         summary: row.summary,
+        translation: row.translation,
         sources: row.all_event_sources ? row.all_event_sources.split('||') : ['Unknown Source'], 
         region: row.region,
         category: row.category,
@@ -135,6 +137,7 @@ app.get('/api/news/personalized', async (req, res) => {
         na.title, 
         na.article_url AS url,
         na.summary, 
+        na.translation,
         na.category, 
         na.published_at AS time,
         r.region_name AS region,
@@ -192,6 +195,7 @@ app.get('/api/news/personalized', async (req, res) => {
         title: row.title,
         url: row.url,
         summary: row.summary,
+        translation: row.translation,
         sources: articleSources.length > 0 ? articleSources : ['Unknown Source'], 
         region: row.region,
         category: row.category,
@@ -216,7 +220,6 @@ app.get('/api/news/personalized', async (req, res) => {
 // 2. CRISIS ALERTS & MAPS
 // ==========================================
 
-// API Endpoint: Get Region-Based Alerts (Passive)
 app.get('/api/alerts', async (req, res) => {
   try {
     const { region } = req.query;
@@ -252,7 +255,6 @@ app.get('/api/alerts', async (req, res) => {
   }
 });
 
-// API Endpoint: Get all active crises for the Map
 app.get('/api/crises', async (req, res) => {
   try {
     const query = `
@@ -277,13 +279,12 @@ app.get('/api/crises', async (req, res) => {
   }
 });
 
-// API Endpoint: Get Location-Based Breaking News Grouped by Region
 app.get('/api/map-news', async (req, res) => {
   try {
     const sql = `
       SELECT 
         r.region_name, r.latitude, r.longitude,
-        na.article_id, na.title, na.summary, na.category, na.published_at, na.article_url,
+        na.article_id, na.title, na.summary, na.translation, na.category, na.published_at, na.article_url,
         ns.source_name
       FROM region r
       JOIN event e ON r.region_id = e.region_id
@@ -294,7 +295,6 @@ app.get('/api/map-news', async (req, res) => {
     `;
     const [rows] = await pool.execute(sql);
 
-    // Grouping the articles by region name for the frontend
     const grouped = rows.reduce((acc, row) => {
       if (!acc[row.region_name]) {
         acc[row.region_name] = {
@@ -308,6 +308,7 @@ app.get('/api/map-news', async (req, res) => {
         id: row.article_id,
         title: row.title,
         summary: row.summary,
+        translation: row.translation,
         category: row.category,
         published_at: row.published_at,
         url: row.article_url,
@@ -323,7 +324,6 @@ app.get('/api/map-news', async (req, res) => {
   }
 });
 
-// API Endpoint: Check User Proximity (Active Alerts)
 app.post('/api/check-crisis-alert', async (req, res) => {
   try {
     const { lat, lng } = req.body;
@@ -358,13 +358,12 @@ app.post('/api/check-crisis-alert', async (req, res) => {
 
 
 // ==========================================
-// 3. USER ACTIVITY & TRENDING (FEATURE 5)
+// 3. USER ACTIVITY & TRENDING
 // ==========================================
 
-// NEW API Endpoint: Get Trending News
 app.get('/api/trending-news', async (req, res) => {
   try {
-    let { window } = req.query; // Expects 'today', '24h', '7d', '30d'
+    let { window } = req.query; 
     let timeCondition = '';
 
     if (window === 'today') {
@@ -385,6 +384,7 @@ app.get('/api/trending-news', async (req, res) => {
         na.article_id, 
         na.title, 
         na.summary, 
+        na.translation,
         na.category, 
         na.published_at, 
         na.article_url,
@@ -408,7 +408,7 @@ app.get('/api/trending-news', async (req, res) => {
       JOIN user_activity ua ON na.article_id = ua.article_id
       WHERE ${timeCondition}
       GROUP BY 
-        na.article_id, na.title, na.summary, na.category, 
+        na.article_id, na.title, na.summary, na.translation, na.category, 
         na.published_at, na.article_url, ns.source_name, 
         e.canonical_title, r.region_name
       ORDER BY trending_score DESC
@@ -417,7 +417,6 @@ app.get('/api/trending-news', async (req, res) => {
 
     const [trendingRows] = await pool.execute(sqlQuery);
 
-    // Save/Update the calculated scores in trending_record for analytics
     for (const item of trendingRows) {
       const [existing] = await pool.execute(
         'SELECT trending_id FROM trending_record WHERE article_id = ? AND time_window = ?', 
@@ -519,7 +518,7 @@ app.post('/api/track-activity', async (req, res) => {
 });
 
 // ==========================================
-// 4. FOLLOW SOURCES (FEATURE 7)
+// 4. FOLLOW SOURCES
 // ==========================================
 
 app.post('/api/follow-source', async (req, res) => {
