@@ -10,7 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Create database connection pool
+// Create database connection pool using your existing .env structure
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -73,7 +73,7 @@ app.get('/api/news', async (req, res) => {
       queryParams.push(region);
     }
     
-    sqlQuery += ` ORDER BY na.published_at DESC`;
+    sqlQuery += ` ORDER BY na.published_at DESC LIMIT 50`;
 
     const [rows] = await pool.execute(sqlQuery, queryParams);
 
@@ -170,7 +170,7 @@ app.get('/api/news/personalized', async (req, res) => {
       queryParams.push(region);
     }
     
-    sqlQuery += ` ORDER BY na.published_at DESC`;
+    sqlQuery += ` ORDER BY na.published_at DESC LIMIT 50`;
 
     const [rows] = await pool.execute(sqlQuery, queryParams);
 
@@ -212,6 +212,64 @@ app.get('/api/news/personalized', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Personalized feed generation failed' });
+  }
+});
+
+// NEW API Endpoint: Get Single Specific News Article (For Shared Links)
+app.get('/api/news/:articleId', async (req, res) => {
+  try {
+    const { articleId } = req.params;
+    const sqlQuery = `
+      SELECT 
+        na.article_id AS id, 
+        na.title, 
+        na.article_url AS url,
+        na.summary, 
+        na.translation, 
+        na.category, 
+        na.published_at AS time,
+        r.region_name AS region,
+        (
+          SELECT LEAST(100, ROUND(AVG(ns2.trust_weight) * 10 + (COUNT(DISTINCT na2.source_id) - 1) * 5))
+          FROM news_article na2 JOIN news_source ns2 ON na2.source_id = ns2.source_id WHERE na2.event_id = na.event_id
+        ) AS base_score,
+        (SELECT COUNT(*) FROM user_activity ua WHERE ua.article_id = na.article_id AND ua.activity_type = 'vote_real') AS real_votes,
+        (SELECT COUNT(*) FROM user_activity ua WHERE ua.article_id = na.article_id AND ua.activity_type = 'vote_fake') AS fake_votes,
+        (
+          SELECT GROUP_CONCAT(DISTINCT ns3.source_name SEPARATOR '||')
+          FROM news_article na3 JOIN news_source ns3 ON na3.source_id = ns3.source_id WHERE na3.event_id = na.event_id
+        ) AS all_event_sources
+      FROM news_article na
+      JOIN event e ON na.event_id = e.event_id
+      JOIN region r ON e.region_id = r.region_id
+      WHERE na.article_id = ?
+    `;
+    
+    const [rows] = await pool.execute(sqlQuery, [articleId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    const row = rows[0];
+    const finalScore = Math.max(0, Math.min(100, row.base_score + (row.real_votes * 2) - (row.fake_votes * 5)));
+    
+    res.json({
+      id: row.id, 
+      title: row.title, 
+      url: row.url, 
+      summary: row.summary, 
+      translation: row.translation,
+      sources: row.all_event_sources ? row.all_event_sources.split('||') : ['Unknown Source'], 
+      region: row.region, 
+      category: row.category, 
+      score: finalScore,
+      realVotes: row.real_votes, 
+      fakeVotes: row.fake_votes, 
+      time: row.time
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Database error' });
   }
 });
 
@@ -292,6 +350,7 @@ app.get('/api/map-news', async (req, res) => {
       JOIN news_source ns ON na.source_id = ns.source_id
       WHERE r.latitude IS NOT NULL AND r.longitude IS NOT NULL
       ORDER BY na.published_at DESC
+      LIMIT 200
     `;
     const [rows] = await pool.execute(sql);
 
@@ -327,7 +386,9 @@ app.get('/api/map-news', async (req, res) => {
 app.post('/api/check-crisis-alert', async (req, res) => {
   try {
     const { lat, lng } = req.body;
-    if (!lat || !lng) return res.status(400).json({ error: "Missing coordinates" });
+    if (!lat || !lng) {
+      return res.status(400).json({ error: "Missing coordinates" });
+    }
 
     const query = `
       SELECT ce.crisis_id, ce.crisis_type, ce.severity_level, ce.radius_km, na.title, na.summary,
@@ -443,6 +504,20 @@ app.get('/api/trending-news', async (req, res) => {
   }
 });
 
+app.post('/api/track-activity', async (req, res) => {
+  try {
+    const { userId, articleId, activityType, readingTime } = req.body;
+    await pool.execute(
+      "INSERT INTO user_activity (user_id, article_id, activity_type, reading_time, activity_time) VALUES (?, ?, ?, ?, NOW())",
+      [userId, articleId, activityType || 'click', readingTime || null]
+    );
+    res.json({ message: "Activity tracked successfully" });
+  } catch (error) {
+    console.error("Tracking error:", error);
+    res.status(500).json({ error: 'Failed to record activity' });
+  }
+});
+
 app.post('/api/vote', async (req, res) => {
   try {
     const { userId, articleId, voteType } = req.body; 
@@ -503,32 +578,129 @@ app.post('/api/remove-vote', async (req, res) => {
   }
 });
 
-app.post('/api/track-activity', async (req, res) => {
+
+// ==========================================
+// 4. BOOKMARKS & DASHBOARD (FEATURE 1 & 3)
+// ==========================================
+
+// Add Bookmark
+app.post('/api/bookmarks', async (req, res) => {
   try {
-    const { userId, articleId, activityType, readingTime } = req.body;
-    await pool.execute(
-      "INSERT INTO user_activity (user_id, article_id, activity_type, reading_time, activity_time) VALUES (?, ?, ?, ?, NOW())",
-      [userId, articleId, activityType || 'click', readingTime || null]
-    );
-    res.json({ message: "Activity tracked successfully" });
+    const { user_id, article_id } = req.body;
+    
+    // Prevent duplicates
+    const [exists] = await pool.execute('SELECT * FROM bookmarks WHERE user_id = ? AND article_id = ?', [user_id, article_id]);
+    if (exists.length > 0) {
+      return res.status(400).json({ message: 'Already bookmarked' });
+    }
+
+    await pool.execute('INSERT INTO bookmarks (user_id, article_id) VALUES (?, ?)', [user_id, article_id]);
+    
+    // Track as activity to boost trending score
+    await pool.execute("INSERT INTO user_activity (user_id, article_id, activity_type, activity_time) VALUES (?, ?, 'bookmark', NOW())", [user_id, article_id]);
+    
+    res.json({ message: 'Bookmarked successfully' });
   } catch (error) {
-    console.error("Tracking error:", error);
-    res.status(500).json({ error: 'Failed to record activity' });
+    console.error(error);
+    res.status(500).json({ error: 'Failed to bookmark' });
   }
 });
 
+// Remove Bookmark
+app.delete('/api/bookmarks/:userId/:articleId', async (req, res) => {
+  try {
+    const { userId, articleId } = req.params;
+    await pool.execute('DELETE FROM bookmarks WHERE user_id = ? AND article_id = ?', [userId, articleId]);
+    res.json({ message: 'Bookmark removed successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to remove bookmark' });
+  }
+});
+
+// Get User's Bookmarked Articles
+app.get('/api/users/:userId/bookmarks', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const sql = `
+      SELECT 
+        na.article_id AS id, 
+        na.title, 
+        na.article_url AS url, 
+        na.summary, 
+        na.category, 
+        na.published_at AS time,
+        ns.source_name, 
+        r.region_name AS region
+      FROM bookmarks b
+      JOIN news_article na ON b.article_id = na.article_id
+      JOIN news_source ns ON na.source_id = ns.source_id
+      JOIN event e ON na.event_id = e.event_id
+      JOIN region r ON e.region_id = r.region_id
+      WHERE b.user_id = ?
+      ORDER BY b.article_id DESC
+    `;
+    const [rows] = await pool.execute(sql, [userId]);
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch bookmarks' });
+  }
+});
+
+// Get User Profile Data
+app.get('/api/users/:userId/profile', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const [user] = await pool.execute(`
+      SELECT u.full_name, u.email, u.preferred_language, r.region_name
+      FROM app_user u 
+      LEFT JOIN region r ON u.region_id = r.region_id 
+      WHERE u.user_id = ?
+    `, [userId]);
+    res.json(user[0] || {});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Get User Recent Activity
+app.get('/api/users/:userId/activity', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const sql = `
+      SELECT ua.activity_type, ua.activity_time, na.title, na.article_id
+      FROM user_activity ua
+      JOIN news_article na ON ua.article_id = na.article_id
+      WHERE ua.user_id = ? AND ua.activity_type IN ('click', 'share', 'bookmark', 'vote_real', 'vote_fake')
+      ORDER BY ua.activity_time DESC 
+      LIMIT 10
+    `;
+    const [rows] = await pool.execute(sql, [userId]);
+    res.json(rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch activity' });
+  }
+});
+
+
 // ==========================================
-// 4. FOLLOW SOURCES
+// 5. FOLLOW SOURCES
 // ==========================================
 
-app.post('/api/follow-source', async (req, res) => {
+// Add or Remove Follow
+app.post('/api/follows', async (req, res) => {
   try {
     const { userId, sourceName } = req.body;
     
     const [sources] = await pool.execute('SELECT source_id FROM news_source WHERE source_name = ?', [sourceName]);
-    if (sources.length === 0) return res.status(404).json({ error: 'Source not found' });
+    if (sources.length === 0) {
+      return res.status(404).json({ error: 'Source not found' });
+    }
+    
     const sourceId = sources[0].source_id;
-
     const [exists] = await pool.execute('SELECT * FROM follows WHERE user_id = ? AND source_id = ?', [userId, sourceId]);
     
     if (exists.length > 0) {
@@ -541,6 +713,49 @@ app.post('/api/follow-source', async (req, res) => {
   } catch (error) {
     console.error("Follow error:", error);
     res.status(500).json({ error: 'Database error during follow toggle' });
+  }
+});
+
+// Alias for backward compatibility
+app.post('/api/follow-source', async (req, res) => {
+  try {
+    const { userId, sourceName } = req.body;
+    
+    const [sources] = await pool.execute('SELECT source_id FROM news_source WHERE source_name = ?', [sourceName]);
+    if (sources.length === 0) {
+      return res.status(404).json({ error: 'Source not found' });
+    }
+    
+    const sourceId = sources[0].source_id;
+    const [exists] = await pool.execute('SELECT * FROM follows WHERE user_id = ? AND source_id = ?', [userId, sourceId]);
+    
+    if (exists.length > 0) {
+      await pool.execute('DELETE FROM follows WHERE user_id = ? AND source_id = ?', [userId, sourceId]);
+      res.json({ message: 'Unfollowed successfully', isFollowing: false });
+    } else {
+      await pool.execute('INSERT INTO follows (user_id, source_id) VALUES (?, ?)', [userId, sourceId]);
+      res.json({ message: 'Followed successfully', isFollowing: true });
+    }
+  } catch (error) {
+    console.error("Follow error:", error);
+    res.status(500).json({ error: 'Database error during follow toggle' });
+  }
+});
+
+app.get('/api/users/:userId/follows', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const [rows] = await pool.execute(`
+      SELECT ns.source_name 
+      FROM follows f 
+      JOIN news_source ns ON f.source_id = ns.source_id 
+      WHERE f.user_id = ?
+    `, [userId]);
+    
+    res.json(rows.map(row => row.source_name));
+  } catch (error) {
+    console.error("Failed to fetch follows:", error);
+    res.status(500).json({ error: 'Failed to fetch follows' });
   }
 });
 
@@ -563,7 +778,7 @@ app.get('/api/user-follows/:userId', async (req, res) => {
 
 
 // ==========================================
-// 5. AUTHENTICATION
+// 6. AUTHENTICATION & ADMIN
 // ==========================================
 
 app.post('/api/signup', async (req, res) => {
@@ -617,11 +832,6 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ error: 'Database error during login' });
   }
 });
-
-
-// ==========================================
-// 6. ADMIN & UTILS
-// ==========================================
 
 app.post('/api/trigger-ai', async (req, res) => {
   try {

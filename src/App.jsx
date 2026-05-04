@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useParams, useNavigate, Link } from 'react-router-dom';
 import AdminDashboard from './AdminDashboard'; 
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -75,6 +75,12 @@ const ThumbsDownIcon = ({ className }) => (
   </svg>
 );
 
+const LayersIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+  </svg>
+);
+
 const ClockIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -93,6 +99,36 @@ const TrendingIcon = ({ className }) => (
   </svg>
 );
 
+const UserIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+);
+
+const ShareIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+  </svg>
+);
+
+const BookmarkOutlineIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+  </svg>
+);
+
+const BookmarkSolidIcon = ({ className }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 20 20">
+    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+  </svg>
+);
+
+const CheckIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </svg>
+);
+
 const formatDateTime = (dateString) => {
   if (!dateString) return "Unknown Date";
   const date = new Date(dateString);
@@ -102,7 +138,137 @@ const formatDateTime = (dateString) => {
   });
 };
 
+// ==========================================
+// COMPONENT: USER PROFILE DASHBOARD
+// ==========================================
+function UserProfile({ currentUser, handleLogout }) {
+  const [profile, setProfile] = useState({});
+  const [bookmarks, setBookmarks] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [follows, setFollows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const loadDashboard = async () => {
+      try {
+        const [profRes, bookRes, actRes, folRes] = await Promise.all([
+          fetch(`https://kagojerstup.onrender.com/api/users/${currentUser.userId}/profile`),
+          fetch(`https://kagojerstup.onrender.com/api/users/${currentUser.userId}/bookmarks`),
+          fetch(`https://kagojerstup.onrender.com/api/users/${currentUser.userId}/activity`),
+          fetch(`https://kagojerstup.onrender.com/api/users/${currentUser.userId}/follows`)
+        ]);
+        setProfile(await profRes.json());
+        setBookmarks(await bookRes.json());
+        setActivities(await actRes.json());
+        setFollows(await folRes.json());
+      } catch (error) { 
+        console.error("Error loading dashboard", error); 
+      }
+      setIsLoading(false);
+    };
+    loadDashboard();
+  }, [currentUser]);
+
+  if (!currentUser) {
+    return <div className="p-20 text-center text-xl font-bold">Please log in to view your profile.</div>;
+  }
+  if (isLoading) {
+    return <div className="p-20 text-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div></div>;
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <h2 className="text-3xl font-extrabold text-[#0F172A] mb-8">My Dashboard</h2>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Profile Info */}
+        <div className="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm h-fit">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold">
+              {profile.full_name?.charAt(0) || 'U'}
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#0F172A]">{profile.full_name}</h3>
+              <p className="text-sm text-slate-500">{profile.email}</p>
+            </div>
+          </div>
+          <div className="space-y-3 border-t border-slate-100 pt-4">
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Region:</span>
+              <span className="font-semibold">{profile.region_name || 'Not set'}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-500">Language:</span>
+              <span className="font-semibold">{profile.preferred_language || 'English'}</span>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="w-full mt-6 bg-red-50 text-red-600 font-bold py-2 rounded-lg hover:bg-red-100 transition-colors">
+            Logout
+          </button>
+        </div>
+
+        {/* Bookmarks & Follows */}
+        <div className="lg:col-span-2 space-y-8">
+          <div className="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
+            <h3 className="text-xl font-bold text-[#0F172A] mb-4 flex items-center gap-2">
+              <BookmarkSolidIcon className="w-5 h-5 text-amber-500"/> Saved Articles
+            </h3>
+            {bookmarks.length === 0 ? <p className="text-slate-500 italic">No bookmarks yet.</p> : (
+              <div className="space-y-4">
+                {bookmarks.map(b => (
+                  <a key={b.id} href={`/news/${b.id}`} className="block bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-blue-300 transition-colors">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1 block">
+                      {b.source_name} • {formatDateTime(b.time)}
+                    </span>
+                    <h4 className="font-bold text-[#0F172A] text-sm">{b.title}</h4>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
+              <h3 className="text-xl font-bold text-[#0F172A] mb-4">Followed Sources</h3>
+              {follows.length === 0 ? <p className="text-slate-500 italic">Not following any sources.</p> : (
+                <div className="flex flex-wrap gap-2">
+                  {follows.map(f => (
+                    <span key={f} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold border border-blue-200">
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-sm">
+              <h3 className="text-xl font-bold text-[#0F172A] mb-4">Recent Activity</h3>
+              {activities.length === 0 ? <p className="text-slate-500 italic">No recent activity.</p> : (
+                <ul className="space-y-3">
+                  {activities.slice(0, 5).map((act, i) => (
+                    <li key={i} className="text-sm">
+                      <span className="font-bold capitalize text-slate-600">{act.activity_type}</span>:{' '}
+                      <a href={`/news/${act.article_id}`} className="text-blue-600 hover:underline line-clamp-1">{act.title}</a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MAIN COMPONENT: NEWS FEED
+// ==========================================
 function NewsFeed() {
+  const { articleId } = useParams(); // Capture dynamic URL for shared links
+  const navigate = useNavigate();
+
   const [activeRegion, setActiveRegion] = useState("Dhaka");
   
   // Filter States
@@ -110,7 +276,7 @@ function NewsFeed() {
   const [activeSource, setActiveSource] = useState("All");
   const [searchQuery, setSearchQuery] = useState(""); 
   
-  // Alert & Map State
+  // Alert & Map State (Feature 6 & 8)
   const [activeAlert, setActiveAlert] = useState(null); 
   const [localCrisisAlert, setLocalCrisisAlert] = useState(null); 
   const [isLocating, setIsLocating] = useState(false);
@@ -120,21 +286,22 @@ function NewsFeed() {
   const [mapNews, setMapNews] = useState([]); 
   const [selectedRegionForSidebar, setSelectedRegionForSidebar] = useState(null); 
   
-  // Trending State
+  // Trending State (Feature 5)
   const [trendingNews, setTrendingNews] = useState([]);
   const [trendingWindow, setTrendingWindow] = useState("24h");
   const [isTrendingLoading, setIsTrendingLoading] = useState(true);
 
   // Interaction States
   const [expandedSummaries, setExpandedSummaries] = useState({});
-  const [translatedArticles, setTranslatedArticles] = useState({}); // NEW: Track translation state
+  const [translatedArticles, setTranslatedArticles] = useState({}); 
   const [newsFeed, setNewsFeed] = useState([]);
+  const [highlightedArticle, setHighlightedArticle] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Auth State
+  // Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('kagojer_user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    return savedUser ? JSON.parse(savedUser) : { userId: 1, name: "Mehrab Mugdho", email: "mehrab@example.com" }; // Fulfills "Assume logged-in user is 1"
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -142,13 +309,18 @@ function NewsFeed() {
   const [authMode, setAuthMode] = useState("login"); 
   const [localVotes, setLocalVotes] = useState({});
   const [followedSources, setFollowedSources] = useState([]);
+  const [bookmarkedArticleIds, setBookmarkedArticleIds] = useState([]); // Track bookmarks locally
   
+  // Share Modal State
+  const [shareModalData, setShareModalData] = useState(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
   const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
 
-  // Fetch Feed & Map Data
+  // Initial Data Fetching
   useEffect(() => {
     const fetchNews = async () => {
       setIsLoading(true);
@@ -161,11 +333,28 @@ function NewsFeed() {
         const data = await response.json();
         setNewsFeed(Array.isArray(data) ? data : []);
         
+        // HIGHLIGHT FETCH (If there's an articleId in the URL)
+        if (articleId) {
+          const singleRes = await fetch(`https://kagojerstup.onrender.com/api/news/${articleId}`);
+          if (singleRes.ok) {
+            const singleData = await singleRes.json();
+            setHighlightedArticle(singleData);
+            if(currentUser) {
+              fetch('https://kagojerstup.onrender.com/api/track-activity', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.userId, articleId: articleId, activityType: 'read' })
+              });
+            }
+            // Auto scroll to feed
+            document.getElementById('live-feed')?.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+
         setActiveCategory("All");
         setActiveSource("All");
         setSearchQuery(""); 
         setExpandedSummaries({});
-        setTranslatedArticles({}); // Reset translation states when region changes
+        setTranslatedArticles({});
         setIsLoading(false);
       } catch (error) {
         console.error("Failed to fetch news:", error);
@@ -174,6 +363,7 @@ function NewsFeed() {
     };
     fetchNews();
 
+    // Fetch Map Data
     const fetchMapData = async () => {
       try {
         const crisesRes = await fetch('https://kagojerstup.onrender.com/api/crises');
@@ -186,7 +376,7 @@ function NewsFeed() {
       }
     };
     fetchMapData();
-  }, [activeRegion, currentUser]); 
+  }, [activeRegion, currentUser, articleId]); 
 
   // Fetch Trending News
   useEffect(() => {
@@ -205,48 +395,78 @@ function NewsFeed() {
     fetchTrending();
   }, [trendingWindow]);
 
-  // Passive alerts based on region
+  // Passive alerts based on region dropdown
   useEffect(() => {
     const checkAlerts = async () => {
-      if (activeRegion === 'All') { setActiveAlert(null); return; }
+      if (activeRegion === 'All') {
+        setActiveAlert(null);
+        return;
+      }
       try {
         const response = await fetch(`https://kagojerstup.onrender.com/api/alerts?region=${activeRegion}`);
         const data = await response.json();
         setActiveAlert((data && data.length > 0) ? data[0] : null);
-      } catch (error) { console.error("Failed to check alerts:", error); }
+      } catch (error) {
+        console.error("Failed to check alerts:", error);
+      }
     };
     checkAlerts(); 
     const intervalId = setInterval(checkAlerts, 30000); 
     return () => clearInterval(intervalId); 
   }, [activeRegion]);
 
-  // Load User Info
+  // Load User Info & Bookmarks
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!currentUser) { setLocalVotes({}); setFollowedSources([]); return; }
-      try {
-        const voteRes = await fetch(`https://kagojerstup.onrender.com/api/user-votes/${currentUser.userId}`);
-        if (voteRes.ok) setLocalVotes(await voteRes.json()); 
+      if (!currentUser) {
+        setLocalVotes({}); 
+        setFollowedSources([]);
+        setBookmarkedArticleIds([]);
+        return;
+      }
 
-        const followRes = await fetch(`https://kagojerstup.onrender.com/api/user-follows/${currentUser.userId}`);
+      try {
+        const [voteRes, followRes, bookRes] = await Promise.all([
+          fetch(`https://kagojerstup.onrender.com/api/user-votes/${currentUser.userId}`),
+          fetch(`https://kagojerstup.onrender.com/api/user-follows/${currentUser.userId}`),
+          fetch(`https://kagojerstup.onrender.com/api/users/${currentUser.userId}/bookmarks`)
+        ]);
+        
+        if (voteRes.ok) setLocalVotes(await voteRes.json()); 
         if (followRes.ok) setFollowedSources(await followRes.json());
-      } catch (error) { console.error("Failed to load user data:", error); }
+        if (bookRes.ok) {
+          const books = await bookRes.json();
+          setBookmarkedArticleIds(books.map(b => b.id)); // Store only IDs for quick lookup
+        }
+      } catch (error) {
+        console.error("Failed to load user data:", error);
+      }
     };
     fetchUserData();
   }, [currentUser]);
 
-  // Handlers
+  // Authentication Handlers
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError("");
+
     const endpoint = authMode === "login" ? "/api/login" : "/api/signup";
-    const payload = authMode === "login" ? { email: authEmail, password: authPassword } : { name: authName, email: authEmail, password: authPassword };
+    const payload = authMode === "login" 
+      ? { email: authEmail, password: authPassword }
+      : { name: authName, email: authEmail, password: authPassword };
+
     try {
       const response = await fetch(`https://kagojerstup.onrender.com${endpoint}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Authentication failed");
+
+      if (!response.ok) {
+        throw new Error(data.error || "Authentication failed");
+      }
 
       if (authMode === "signup") {
         setAuthMode("login");
@@ -259,73 +479,173 @@ function NewsFeed() {
         setAuthEmail("");
         setAuthPassword("");
       }
-    } catch (err) { setAuthError(err.message); }
+    } catch (err) {
+      setAuthError(err.message);
+    }
   };
 
-  const handleLogout = () => { setCurrentUser(null); localStorage.removeItem('kagojer_user'); };
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('kagojer_user');
+  };
 
+  // Interaction Handlers
   const handleVote = async (articleId, voteType) => {
-    if (!currentUser) { setAuthMode("login"); setIsAuthModalOpen(true); return; }
+    if (!currentUser) {
+      setAuthMode("login");
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     const previousVote = localVotes[articleId];
 
-    if (previousVote === voteType) {
-      setNewsFeed(prevFeed => prevFeed.map(news => {
+    const updateState = (newType) => {
+      const updateNews = (news) => {
         if (news.id === articleId) {
           let newScore = news.score;
           let newReal = news.realVotes || 0;
           let newFake = news.fakeVotes || 0;
-          if (voteType === 'vote_real') { newReal = Math.max(0, newReal - 1); newScore = Math.max(0, newScore - 2); } 
-          else if (voteType === 'vote_fake') { newFake = Math.max(0, newFake - 1); newScore = Math.min(100, newScore + 5); }
+
+          if (previousVote === 'vote_real') { newReal = Math.max(0, newReal - 1); newScore -= 2; } 
+          else if (previousVote === 'vote_fake') { newFake = Math.max(0, newFake - 1); newScore += 5; }
+
+          if (newType === 'vote_real') { newReal += 1; newScore = Math.min(100, newScore + 2); } 
+          else if (newType === 'vote_fake') { newFake += 1; newScore = Math.max(0, newScore - 5); }
+
           return { ...news, score: newScore, realVotes: newReal, fakeVotes: newFake };
         }
         return news;
-      }));
-      setLocalVotes(prev => { const newState = { ...prev }; delete newState[articleId]; return newState; });
+      };
+      
+      setNewsFeed(prevFeed => prevFeed.map(updateNews));
+      if (highlightedArticle && highlightedArticle.id === articleId) {
+        setHighlightedArticle(updateNews(highlightedArticle));
+      }
+    };
+
+    if (previousVote === voteType) {
+      updateState(null);
+      setLocalVotes(prev => {
+        const newState = { ...prev };
+        delete newState[articleId]; 
+        return newState;
+      });
+
       try {
         await fetch('https://kagojerstup.onrender.com/api/remove-vote', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUser.userId, articleId })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.userId, articleId })
         });
-      } catch (error) { console.error("Failed to remove vote:", error); }
+      } catch (error) {
+        console.error("Failed to remove vote:", error);
+      }
       return; 
     }
 
-    setNewsFeed(prevFeed => prevFeed.map(news => {
-      if (news.id === articleId) {
-        let newScore = news.score;
-        let newReal = news.realVotes || 0;
-        let newFake = news.fakeVotes || 0;
-        if (previousVote === 'vote_real') { newReal = Math.max(0, newReal - 1); newScore -= 2; } 
-        else if (previousVote === 'vote_fake') { newFake = Math.max(0, newFake - 1); newScore += 5; }
-
-        if (voteType === 'vote_real') { newReal += 1; newScore = Math.min(100, newScore + 2); } 
-        else if (voteType === 'vote_fake') { newFake += 1; newScore = Math.max(0, newScore - 5); }
-        return { ...news, score: newScore, realVotes: newReal, fakeVotes: newFake };
-      }
-      return news;
-    }));
+    updateState(voteType);
     setLocalVotes(prev => ({ ...prev, [articleId]: voteType }));
+
     try {
       await fetch('https://kagojerstup.onrender.com/api/vote', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUser.userId, articleId, voteType })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.userId, articleId, voteType })
       });
-    } catch (error) { console.error("Voting failed:", error); }
+    } catch (error) {
+      console.error("Voting failed:", error);
+    }
   };
 
-  const handleArticleActivity = async (articleId, type) => {
-    if (!currentUser) { setAuthMode("login"); setIsAuthModalOpen(true); return; }
-    try {
-      await fetch('https://kagojerstup.onrender.com/api/track-activity', {
+  const handleBookmark = async (articleId) => {
+    if (!currentUser) { 
+      setAuthMode("login"); 
+      setIsAuthModalOpen(true); 
+      return; 
+    }
+    
+    const isBookmarked = bookmarkedArticleIds.includes(articleId);
+    
+    // Optimistic UI Update
+    if (isBookmarked) {
+      setBookmarkedArticleIds(prev => prev.filter(id => id !== articleId));
+      try {
+        await fetch(`https://kagojerstup.onrender.com/api/bookmarks/${currentUser.userId}/${articleId}`, { method: 'DELETE' });
+      } catch (error) {
+        console.error("Failed to remove bookmark", error);
+        setBookmarkedArticleIds(prev => [...prev, articleId]); // Revert on failure
+      }
+    } else {
+      setBookmarkedArticleIds(prev => [...prev, articleId]);
+      try {
+        await fetch('https://kagojerstup.onrender.com/api/bookmarks', {
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: currentUser.userId, article_id: articleId })
+        });
+      } catch (error) {
+        console.error("Failed to add bookmark", error);
+        setBookmarkedArticleIds(prev => prev.filter(id => id !== articleId)); // Revert on failure
+      }
+    }
+  };
+
+  const handleShare = async (article) => {
+    if (currentUser) {
+      fetch('https://kagojerstup.onrender.com/api/track-activity', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.userId, articleId: articleId, activityType: type })
+        body: JSON.stringify({ userId: currentUser.userId, articleId: article.id || article.article_id, activityType: 'share' })
       });
-      if (type === 'share') alert("Link copied/shared successfully! This boosts the trending score.");
-      if (type === 'bookmark') alert("Article bookmarked successfully!");
-    } catch (error) { console.error("Failed to track activity:", error); }
+    }
+
+    // Build the dynamic URL that points back to exactly this article
+    const shareUrl = `${window.location.origin}/news/${article.id || article.article_id}`;
+    
+    // Attempt to use native mobile Web Share API first
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: article.title,
+          text: article.summary,
+          url: shareUrl,
+        });
+      } catch (err) {
+        console.error("Web Share failed, falling back to modal", err);
+        setShareModalData({ ...article, shareUrl });
+      }
+    } else {
+      // Fallback to our custom modal
+      setShareModalData({ ...article, shareUrl });
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareModalData.shareUrl);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  const handleArticleClick = async (articleId) => {
+    if (!currentUser) return; 
+    try {
+      fetch('https://kagojerstup.onrender.com/api/track-activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.userId, articleId: articleId, activityType: 'click' })
+      });
+    } catch (error) {
+      console.error("Failed to track click:", error);
+    }
   };
 
   const handleLiveLocation = () => {
     setIsLocating(true);
-    if (!navigator.geolocation) { alert("Geolocation is not supported by your browser"); setIsLocating(false); return; }
+    
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      setIsLocating(false);
+      return;
+    }
 
     navigator.geolocation.getCurrentPosition(async (position) => {
       try {
@@ -333,23 +653,38 @@ function NewsFeed() {
         const lon = position.coords.longitude;
         setUserLocation({ lat, lng: lon });
 
+        // Check for Active Crisis near User
         const alertRes = await fetch('https://kagojerstup.onrender.com/api/check-crisis-alert', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat, lng: lon })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lat, lng: lon })
         });
         const alertData = await alertRes.json();
-        if (alertData.inDangerZone) setLocalCrisisAlert(alertData.alert);
-        else setLocalCrisisAlert(null); 
         
+        if (alertData.inDangerZone) {
+          setLocalCrisisAlert(alertData.alert);
+        } else {
+          setLocalCrisisAlert(null); 
+        }
+        
+        // Reverse-geocode to get the city name
         const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
         const data = await response.json();
         const city = data.city || data.locality || "Dhaka"; 
         
         const validRegions = ["Dhaka", "Chattogram", "Sylhet", "Sunamganj", "Narsingdi", "Narayanganj", "Banani", "Mirpur", "Cox's Bazar", "Netrokona", "Gaibandha", "Keraniganj"];
-        if (validRegions.includes(city)) setActiveRegion(city);
-        else setActiveRegion("Dhaka");
+        
+        if (validRegions.includes(city)) {
+          setActiveRegion(city);
+        } else {
+          setActiveRegion("Dhaka");
+        }
       } catch (error) {
+        console.error("Location error:", error);
         alert("Failed to determine location.");
-      } finally { setIsLocating(false); }
+      } finally {
+        setIsLocating(false);
+      }
     }, (error) => {
       alert("Please allow location permissions in your browser.");
       setIsLocating(false);
@@ -357,41 +692,215 @@ function NewsFeed() {
   };
 
   const handleFollowToggle = async (sourceName) => {
-    if (!currentUser) { setAuthMode("login"); setIsAuthModalOpen(true); return; }
+    if (!currentUser) {
+      setAuthMode("login");
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     const isCurrentlyFollowing = followedSources.includes(sourceName);
-    if (isCurrentlyFollowing) { setFollowedSources(prev => prev.filter(s => s !== sourceName)); } 
-    else { setFollowedSources(prev => [...prev, sourceName]); }
+    
+    // Optimistic UI update
+    if (isCurrentlyFollowing) {
+      setFollowedSources(prev => prev.filter(s => s !== sourceName));
+    } else {
+      setFollowedSources(prev => [...prev, sourceName]);
+    }
 
     try {
       await fetch('https://kagojerstup.onrender.com/api/follow-source', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: currentUser.userId, sourceName })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.userId, sourceName })
       });
     } catch (error) {
-      if (isCurrentlyFollowing) { setFollowedSources(prev => [...prev, sourceName]); } 
-      else { setFollowedSources(prev => prev.filter(s => s !== sourceName)); }
+      console.error("Follow toggle failed:", error);
+      // Revert if API fails
+      if (isCurrentlyFollowing) {
+        setFollowedSources(prev => [...prev, sourceName]);
+      } else {
+        setFollowedSources(prev => prev.filter(s => s !== sourceName));
+      }
     }
   };
 
   const toggleSummary = (articleId) => {
-    setExpandedSummaries(prev => ({ ...prev, [articleId]: !prev[articleId] }));
+    setExpandedSummaries(prev => ({
+      ...prev,
+      [articleId]: !prev[articleId]
+    }));
   };
 
-  // NEW: Function to toggle translation state
   const toggleTranslation = (articleId) => {
-    setTranslatedArticles(prev => ({ ...prev, [articleId]: !prev[articleId] }));
+    setTranslatedArticles(prev => ({
+      ...prev,
+      [articleId]: !prev[articleId]
+    }));
+  };
+
+  // Reusable News Card Renderer
+  const renderNewsCard = (news, isHighlighted = false) => {
+    const isBookmarked = bookmarkedArticleIds.includes(news.id || news.article_id);
+
+    return (
+      <article key={news.id || news.article_id} className={`bg-slate-50 border rounded-xl p-6 transition-all flex flex-col justify-between h-fit
+        ${isHighlighted ? 'border-blue-500 shadow-xl shadow-blue-900/10 ring-2 ring-blue-200 mb-8' : 'border-[#E2E8F0] hover:border-[#2563EB] hover:shadow-lg'}
+      `}>
+        {isHighlighted && (
+          <div className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full w-max mb-4 uppercase tracking-wider">
+            Shared Article
+          </div>
+        )}
+        
+        <div>
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex gap-2 items-center flex-wrap">
+              <span className="bg-white text-slate-700 text-xs font-bold px-2.5 py-1 rounded-md border border-[#E2E8F0] uppercase tracking-wider">
+                {news.category}
+              </span>
+              <span className="text-xs font-bold px-2.5 py-1 rounded-md border flex items-center gap-1 bg-transparent text-slate-500 border-dashed border-slate-300">
+                <MapPinIcon className="w-3 h-3" /> {news.region || news.region_name}
+              </span>
+            </div>
+            
+            <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-md border transition-colors
+              ${(news.score || news.trending_score) >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 
+                (news.score || news.trending_score) >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 
+                'bg-red-50 text-red-800 border-red-200'}`}>
+              <ShieldCheckIcon className="w-3.5 h-3.5" /> {news.score || news.trending_score}% Trust Score
+            </div>
+          </div>
+
+          <h3 className="text-xl font-bold text-[#0F172A] mb-3 hover:text-[#2563EB] transition-colors leading-snug">
+            <a href={news.url || news.article_url || "#"} target="_blank" rel="noopener noreferrer" onClick={() => handleArticleClick(news.id || news.article_id)}>
+              {news.title}
+            </a>
+          </h3>
+          
+          <div className="mb-5 relative z-10">
+            <p className={`text-sm text-[#64748B] leading-relaxed transition-all duration-300 ${expandedSummaries[news.id || news.article_id] ? '' : 'line-clamp-2'}`}>
+              {translatedArticles[news.id || news.article_id] && news.translation ? news.translation : news.summary}
+            </p>
+            
+            <div className="flex gap-2 mt-2">
+              {news.summary && news.summary.length > 100 && (
+                <button 
+                  onClick={(e) => { e.preventDefault(); toggleSummary(news.id || news.article_id); }}
+                  className="text-xs font-bold text-[#2563EB] bg-blue-100/50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>✨</span> {expandedSummaries[news.id || news.article_id] ? 'Hide Summary' : 'Read AI Summary'}
+                </button>
+              )}
+              
+              {news.translation && (
+                <button 
+                  onClick={(e) => { e.preventDefault(); toggleTranslation(news.id || news.article_id); }}
+                  className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  🌐 {translatedArticles[news.id || news.article_id] ? 'Original' : 'Translate'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="text-xs text-slate-500 font-medium">Sources:</span>
+            {/* Handle array from feed or single string from trending */}
+            {(news.sources || [news.source_name]).map((source, idx) => {
+              const isFollowed = followedSources.includes(source);
+              return (
+                <div key={idx} className="flex items-center bg-white border border-[#E2E8F0] rounded overflow-hidden shadow-sm relative z-10">
+                  <button 
+                    onClick={() => setActiveSource(source)}
+                    className="text-xs font-semibold text-[#0F172A] hover:bg-blue-50 hover:text-blue-700 px-2 py-1 transition-colors cursor-pointer"
+                  >
+                    {source}
+                  </button>
+                  <button
+                    onClick={() => handleFollowToggle(source)}
+                    className={`px-2 py-1 text-xs border-l border-[#E2E8F0] transition-colors cursor-pointer 
+                      ${isFollowed 
+                        ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
+                        : 'bg-slate-50 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
+                  >
+                    ★
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          
+          <div className="pt-4 border-t border-[#E2E8F0] flex flex-col xl:flex-row justify-between xl:items-center gap-4 relative z-10">
+            <div className="flex items-center gap-1 text-xs text-slate-500 font-medium whitespace-nowrap">
+              <ClockIcon className="w-3.5 h-3.5" /> {formatDateTime(news.time || news.published_at)}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              
+              {/* Interaction Buttons */}
+              <button 
+                onClick={() => handleBookmark(news.id || news.article_id)} 
+                className={`p-1.5 rounded-full border transition-colors ${isBookmarked ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-white text-slate-400 border-slate-200 hover:text-blue-500 hover:bg-blue-50'}`}
+                title={isBookmarked ? "Remove Bookmark" : "Bookmark Article"}
+              >
+                {isBookmarked ? <BookmarkSolidIcon className="w-4 h-4"/> : <BookmarkOutlineIcon className="w-4 h-4"/>}
+              </button>
+              
+              <button 
+                onClick={() => handleShare(news)} 
+                className="p-1.5 rounded-full border bg-white border-slate-200 text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                title="Share Article"
+              >
+                <ShareIcon className="w-4 h-4"/>
+              </button>
+              
+              <div className="w-px h-6 bg-slate-200 mx-1"></div>
+
+              {/* Voting Buttons */}
+              <button 
+                onClick={(e) => { e.preventDefault(); handleVote(news.id || news.article_id, 'vote_real'); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border
+                  ${localVotes[news.id || news.article_id] === 'vote_real' 
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                    : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}
+              >
+                <ThumbsUpIcon className="w-4 h-4" /> Real 
+              </button>
+              
+              <button 
+                onClick={(e) => { e.preventDefault(); handleVote(news.id || news.article_id, 'vote_fake'); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border
+                  ${localVotes[news.id || news.article_id] === 'vote_fake' 
+                    ? 'bg-red-100 text-red-800 border-red-300' 
+                    : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}
+              >
+                <ThumbsDownIcon className="w-4 h-4" /> Fake 
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    );
   };
 
   const uniqueCategories = ["All", ...new Set(newsFeed.map(item => item.category).filter(Boolean))];
   const uniqueSources = ["All", ...new Set(newsFeed.flatMap(item => item.sources).filter(Boolean))];
 
   const filteredFeed = newsFeed.filter(news => {
+    // Exclude the highlighted article from the main feed loop to prevent showing it twice
+    if (highlightedArticle && news.id === highlightedArticle.id) return false;
+
     const matchCategory = activeCategory === 'All' || news.category === activeCategory;
     const matchSource = activeSource === 'All' || news.sources.includes(activeSource);
+    
     const query = searchQuery.toLowerCase();
     const matchSearch = searchQuery === "" || 
       (news.title && news.title.toLowerCase().includes(query)) || 
       (news.summary && news.summary.toLowerCase().includes(query)) ||
-      (news.translation && news.translation.toLowerCase().includes(query)); // Search checks translation too!
+      (news.translation && news.translation.toLowerCase().includes(query));
+
     return matchCategory && matchSource && matchSearch;
   });
 
@@ -421,7 +930,9 @@ function NewsFeed() {
                 <span className="font-extrabold uppercase tracking-widest text-red-100 text-xs block mb-1">
                   IMMEDIATE DANGER DETECTED NEAR YOUR LOCATION
                 </span>
-                <span className="font-bold text-lg sm:text-xl">{localCrisisAlert.title}</span>
+                <span className="font-bold text-lg sm:text-xl">
+                  {localCrisisAlert.title}
+                </span>
               </div>
             </div>
             <button onClick={() => setLocalCrisisAlert(null)} className="text-red-200 hover:text-white ml-4 font-bold text-xl px-2">✕</button>
@@ -434,7 +945,9 @@ function NewsFeed() {
             <div className="max-w-7xl mx-auto flex items-center gap-3 w-full">
               <AlertTriangleIcon className="w-5 h-5 flex-shrink-0 text-orange-100" />
               <div>
-                <span className="font-bold text-sm">Alert for {activeAlert.region}: {activeAlert.title}</span>
+                <span className="font-bold text-sm">
+                  Alert for {activeAlert.region}: {activeAlert.title}
+                </span>
               </div>
             </div>
             <button onClick={() => setActiveAlert(null)} className="text-white hover:text-orange-200 ml-4">✕</button>
@@ -445,27 +958,24 @@ function NewsFeed() {
         <nav className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-[#E2E8F0] pt-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center gap-2 cursor-pointer group" onClick={() => window.location.reload()}>
+              <Link to="/" className="flex items-center gap-2 cursor-pointer group" onClick={() => window.location.reload()}>
                 <div className="w-8 h-8 rounded bg-[#2563EB] text-white flex items-center justify-center font-bold text-lg group-hover:bg-blue-700 transition-colors">ক</div>
                 <span className="font-bold text-xl tracking-tight group-hover:text-[#2563EB] transition-colors">কাগজের স্তূপ</span>
-              </div>
+              </Link>
               <div className="hidden md:flex space-x-8">
-                <a href="#" className="text-[#0F172A] font-medium hover:text-[#2563EB]">Home</a>
-                <a href="#trending" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><TrendingIcon className="w-4 h-4"/> Trending</a>
-                <a href="#live-feed" className="text-[#64748B] font-medium hover:text-[#2563EB]">Live Feed</a>
-                <a href="#news-map" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><MapPinIcon className="w-4 h-4"/> Global Map</a>
+                <Link to="/" className="text-[#0F172A] font-medium hover:text-[#2563EB]">Home</Link>
+                <a href="/#trending" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><TrendingIcon className="w-4 h-4"/> Trending</a>
+                <a href="/#news-map" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><MapPinIcon className="w-4 h-4"/> Global Map</a>
               </div>
               <div className="flex items-center gap-4">
                 {currentUser ? (
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-semibold text-[#0F172A]">Hi, {currentUser.name.split(' ')[0]}</span>
-                    <button onClick={handleLogout} className="text-[#64748B] hover:text-red-600 font-medium transition-colors text-sm">Logout</button>
+                    <Link to="/profile" className="flex items-center gap-2 text-sm font-semibold text-[#0F172A] bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors">
+                      <UserIcon className="w-4 h-4 text-blue-600"/> {currentUser.name.split(' ')[0]}
+                    </Link>
                   </div>
                 ) : (
-                  <>
-                    <button onClick={() => {setAuthMode("login"); setIsAuthModalOpen(true);}} className="text-[#0F172A] font-medium hover:text-[#2563EB] transition-colors hidden sm:block">Sign In</button>
-                    <button onClick={() => {setAuthMode("signup"); setIsAuthModalOpen(true);}} className="bg-[#2563EB] hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-blue-600">Get Started</button>
-                  </>
+                  <button onClick={() => {setAuthMode("login"); setIsAuthModalOpen(true);}} className="bg-[#2563EB] hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-blue-600">Sign In</button>
                 )}
               </div>
             </div>
@@ -520,7 +1030,8 @@ function NewsFeed() {
                         <option value="Keraniganj">Keraniganj</option>
                       </select>
                       <button 
-                        onClick={handleLiveLocation} disabled={isLocating}
+                        onClick={handleLiveLocation}
+                        disabled={isLocating}
                         className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-100 hover:bg-blue-200 text-blue-700 p-1.5 rounded-md transition-colors"
                         title="Use My Live Location & Enable Danger Alerts"
                       >
@@ -538,11 +1049,19 @@ function NewsFeed() {
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-100 to-emerald-100 rounded-2xl blur-xl opacity-50"></div>
                 <div className="relative bg-white border border-[#E2E8F0] rounded-2xl shadow-xl overflow-hidden p-6 hover:shadow-2xl transition-shadow duration-500">
                   <div className="flex justify-between items-start mb-4">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider"><MapPinIcon className="w-3 h-3" /> Near You</span>
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-bold"><ShieldCheckIcon className="w-4 h-4" /> 94% Credibility</span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider">
+                      <MapPinIcon className="w-3 h-3" /> Near You
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm font-bold">
+                      <ShieldCheckIcon className="w-4 h-4" /> 94% Credibility
+                    </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-[#0F172A] mb-2 leading-tight">Dhaka Metro Rail Line 6 Extends Operating Hours</h3>
-                  <p className="text-[#64748B] mb-6 line-clamp-2">Authorities announce extended night operations for Line 6 starting next month to accommodate growing commuter demand in the capital, following multiple successful trials.</p>
+                  <h3 className="text-2xl font-bold text-[#0F172A] mb-2 leading-tight">
+                    Dhaka Metro Rail Line 6 Extends Operating Hours
+                  </h3>
+                  <p className="text-[#64748B] mb-6 line-clamp-2">
+                    Authorities announce extended night operations for Line 6 starting next month to accommodate growing commuter demand in the capital, following multiple successful trials.
+                  </p>
                 </div>
               </div>
 
@@ -551,7 +1070,7 @@ function NewsFeed() {
         </header>
 
         {/* Feature 5: Trending News Detection */}
-        <section id="trending" className="py-20 bg-slate-50 border-t border-[#E2E8F0] relative overflow-hidden">
+        <section id="trending" className="py-20 bg-slate-50 border-b border-[#E2E8F0] relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
               <div>
@@ -568,7 +1087,9 @@ function NewsFeed() {
                     key={window}
                     onClick={() => setTrendingWindow(window)}
                     className={`px-4 py-2 text-sm font-bold rounded-md transition-all ${
-                      trendingWindow === window ? 'bg-white text-[#2563EB] shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-300'
+                      trendingWindow === window 
+                      ? 'bg-white text-[#2563EB] shadow-sm' 
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-300'
                     }`}
                   >
                     {window === 'today' ? 'Today' : window === '24h' ? '24 Hours' : window === '7d' ? '7 Days' : '30 Days'}
@@ -587,58 +1108,7 @@ function NewsFeed() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {trendingNews.map((news, index) => (
-                  <article key={news.article_id} className="bg-white rounded-2xl p-6 border border-[#E2E8F0] hover:border-[#2563EB] hover:shadow-xl hover:shadow-blue-900/5 transition-all flex flex-col justify-between relative overflow-hidden group">
-                    <div className={`absolute -right-4 -top-4 w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black opacity-30 pointer-events-none group-hover:scale-110 transition-transform ${
-                      index === 0 ? 'bg-amber-100 text-amber-500' : 
-                      index === 1 ? 'bg-slate-200 text-slate-500' : 
-                      index === 2 ? 'bg-orange-100 text-orange-600' : 'bg-slate-50 text-slate-300'
-                    }`}>
-                      #{index + 1}
-                    </div>
-
-                    <div className="relative z-10">
-                      <div className="flex gap-2 mb-4">
-                        <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">{news.category}</span>
-                        <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1"><MapPinIcon className="w-3 h-3"/> {news.region_name}</span>
-                      </div>
-                      
-                      <h3 className="text-lg font-bold text-[#0F172A] mb-3 leading-snug line-clamp-2 group-hover:text-[#2563EB] transition-colors">
-                        <a href={news.article_url || "#"} target="_blank" rel="noopener noreferrer" onClick={() => handleArticleActivity(news.article_id, 'click')}>
-                          {news.title}
-                        </a>
-                      </h3>
-                      
-                      <div className="mb-4">
-                        <p className="text-sm text-[#64748B] line-clamp-2">
-                          {/* NEW: Use translation if active */}
-                          {translatedArticles[news.article_id] && news.translation ? news.translation : news.summary}
-                        </p>
-                        
-                        {/* NEW: Translate Button */}
-                        {news.translation && (
-                          <button 
-                            onClick={(e) => { e.preventDefault(); toggleTranslation(news.article_id); }}
-                            className="mt-2 text-xs font-bold text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-colors"
-                          >
-                            🌐 {translatedArticles[news.article_id] ? 'Show Original' : 'Translate'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="relative z-10 mt-auto pt-4 border-t border-[#E2E8F0]">
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-xs font-semibold text-[#64748B]">Source: <strong className="text-[#0F172A]">{news.source_name}</strong></span>
-                        <span className="text-[10px] font-medium text-slate-500">{formatDateTime(news.published_at)}</span>
-                      </div>
-                      <div className="flex gap-2">
-                         <button onClick={() => handleArticleActivity(news.article_id, 'bookmark')} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-xs font-bold transition-colors">Bookmark</button>
-                         <button onClick={() => handleArticleActivity(news.article_id, 'share')} className="flex-1 bg-[#2563EB] hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-bold transition-colors">Share</button>
-                      </div>
-                    </div>
-                  </article>
-                ))}
+                {trendingNews.map((news, index) => renderNewsCard(news, false))}
               </div>
             )}
           </div>
@@ -664,106 +1134,63 @@ function NewsFeed() {
                     placeholder="Search keywords..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] shadow-sm transition-colors"
+                    className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] shadow-sm transition-colors"
                   />
                 </div>
 
-                <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)} className="flex-1 lg:flex-none px-4 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#2563EB] cursor-pointer shadow-sm">
-                  {uniqueCategories.map(category => (<option key={category} value={category}>{category === 'All' ? 'All Categories' : category}</option>))}
+                <select 
+                  value={activeCategory}
+                  onChange={(e) => setActiveCategory(e.target.value)}
+                  className="flex-1 lg:flex-none px-4 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
+                >
+                  {uniqueCategories.map(category => (
+                    <option key={category} value={category}>{category === 'All' ? 'All Categories' : category}</option>
+                  ))}
                 </select>
 
-                <select value={activeSource} onChange={(e) => setActiveSource(e.target.value)} className="flex-1 lg:flex-none px-4 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#2563EB] cursor-pointer shadow-sm">
-                  {uniqueSources.map(source => (<option key={source} value={source}>{source === 'All' ? 'All Portals' : source}</option>))}
+                <select 
+                  value={activeSource}
+                  onChange={(e) => setActiveSource(e.target.value)}
+                  className="flex-1 lg:flex-none px-4 py-2.5 bg-slate-50 border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
+                >
+                  {uniqueSources.map(source => (
+                    <option key={source} value={source}>{source === 'All' ? 'All Portals' : source}</option>
+                  ))}
                 </select>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {isLoading ? (
-                <div className="col-span-full py-12 flex justify-center items-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div></div>
-              ) : filteredFeed.length === 0 ? (
-                <div className="col-span-full py-12 text-center bg-slate-50 border border-[#E2E8F0] rounded-xl">
-                  <p className="text-[#64748B] text-lg font-medium">No articles found matching your filters.</p>
-                  {(activeCategory !== 'All' || activeSource !== 'All' || searchQuery !== "") && (
-                    <button onClick={() => {setActiveCategory('All'); setActiveSource('All'); setSearchQuery("");}} className="mt-4 text-[#2563EB] font-bold hover:underline">Clear Filters</button>
-                  )}
+                <div className="col-span-full py-12 flex justify-center items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]"></div>
                 </div>
               ) : (
-                filteredFeed.map((news) => (
-                  <article key={news.id} className="bg-slate-50 border border-[#E2E8F0] rounded-xl p-6 hover:border-[#2563EB] hover:shadow-lg transition-all flex flex-col justify-between h-fit">
-                    <div>
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex gap-2 items-center flex-wrap">
-                          <span className="bg-white text-slate-700 text-xs font-bold px-2.5 py-1 rounded-md border border-[#E2E8F0] uppercase tracking-wider">{news.category}</span>
-                          <span className="text-xs font-bold px-2.5 py-1 rounded-md border flex items-center gap-1 bg-transparent text-slate-500 border-dashed border-slate-300">
-                            <MapPinIcon className="w-3 h-3" /> {news.region}
-                          </span>
-                        </div>
-                        <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-md border transition-colors ${news.score >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : news.score >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-red-50 text-red-800 border-red-200'}`}>
-                          <ShieldCheckIcon className="w-3.5 h-3.5" /> {news.score}% Trust Score
-                        </div>
-                      </div>
+                <>
+                  {/* Highlighted Shared Article */}
+                  {highlightedArticle && renderNewsCard(highlightedArticle, true)}
 
-                      <h3 className="text-xl font-bold text-[#0F172A] mb-3 hover:text-[#2563EB] transition-colors leading-snug">
-                        <a href={news.url || "#"} target="_blank" rel="noopener noreferrer" onClick={() => handleArticleActivity(news.id, 'click')}>
-                          {news.title}
-                        </a>
-                      </h3>
-                      
-                      <div className="mb-5 relative z-10">
-                        <p className={`text-sm text-[#64748B] leading-relaxed transition-all duration-300 ${expandedSummaries[news.id] ? '' : 'line-clamp-2'}`}>
-                          {/* NEW: Show Translation if Toggled */}
-                          {translatedArticles[news.id] && news.translation ? news.translation : news.summary}
-                        </p>
-                        
-                        <div className="flex gap-2 mt-2">
-                          {news.summary && news.summary.length > 100 && (
-                            <button onClick={(e) => { e.preventDefault(); toggleSummary(news.id); }} className="text-xs font-bold text-[#2563EB] bg-blue-100/50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5">
-                              <span>✨</span> {expandedSummaries[news.id] ? 'Hide Summary' : 'Read AI Summary'}
-                            </button>
-                          )}
-                          
-                          {/* NEW: Translation Button */}
-                          {news.translation && (
-                            <button onClick={(e) => { e.preventDefault(); toggleTranslation(news.id); }} className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5">
-                              🌐 {translatedArticles[news.id] ? 'Show Original' : 'Translate'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                  {/* Feed Body */}
+                  {filteredFeed.length === 0 && !highlightedArticle ? (
+                    <div className="col-span-full py-12 text-center bg-slate-50 border border-[#E2E8F0] rounded-xl">
+                      <p className="text-[#64748B] text-lg font-medium">No articles found matching your filters.</p>
+                      {(activeCategory !== 'All' || activeSource !== 'All' || searchQuery !== "") && (
+                        <button 
+                          onClick={() => {
+                            setActiveCategory('All'); 
+                            setActiveSource('All');
+                            setSearchQuery("");
+                          }} 
+                          className="mt-4 text-[#2563EB] font-bold hover:underline focus:outline-none"
+                        >
+                          Clear Filters
+                        </button>
+                      )}
                     </div>
-
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2 mb-4">
-                        <span className="text-xs text-slate-500 font-medium">Sources:</span>
-                        {news.sources.map((source, idx) => {
-                          const isFollowed = followedSources.includes(source);
-                          return (
-                            <div key={idx} className="flex items-center bg-white border border-[#E2E8F0] rounded overflow-hidden shadow-sm relative z-10">
-                              <button onClick={() => setActiveSource(source)} className="text-xs font-semibold text-[#0F172A] hover:bg-blue-50 hover:text-blue-700 px-2 py-1 transition-colors">{source}</button>
-                              <button onClick={() => handleFollowToggle(source)} className={`px-2 py-1 text-xs border-l border-[#E2E8F0] transition-colors cursor-pointer ${isFollowed ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}>★</button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      
-                      <div className="pt-4 border-t border-[#E2E8F0] flex flex-col xl:flex-row justify-between xl:items-center gap-4 relative z-10">
-                        <div className="flex items-center gap-1 text-xs text-slate-500 font-medium whitespace-nowrap">
-                          <ClockIcon className="w-3.5 h-3.5" /> {formatDateTime(news.time)}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-slate-400 font-medium mr-1">Verify:</span>
-                          <button onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_real'); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_real' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}>
-                            <ThumbsUpIcon className="w-4 h-4" /> Real 
-                          </button>
-                          <button onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_fake'); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_fake' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}>
-                            <ThumbsDownIcon className="w-4 h-4" /> Fake 
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                ))
+                  ) : (
+                    filteredFeed.map((news) => renderNewsCard(news, false))
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -778,21 +1205,45 @@ function NewsFeed() {
                   <MapPinIcon className="w-6 h-6 text-[#2563EB]" />
                   <h2 className="text-3xl font-extrabold text-[#0F172A]">Interactive News Map</h2>
                 </div>
-                <p className="text-[#64748B]">Click on a <strong className="text-blue-600">blue pin</strong> for breaking news, a <strong className="text-red-600">red pin</strong> for active crises, and see the <strong className="text-emerald-600">green pin</strong> for your live location.</p>
+                <p className="text-[#64748B]">
+                  Click on a <strong className="text-blue-600">blue pin</strong> for breaking news, a <strong className="text-red-600">red pin</strong> for active crises, and see the <strong className="text-emerald-600">green pin</strong> for your live location.
+                </p>
               </div>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-6 h-auto lg:h-[600px] w-full">
+              
               <div className="w-full lg:w-2/3 h-[400px] lg:h-full rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-md relative z-10 bg-slate-100">
-                <MapContainer center={[23.6850, 90.3563]} zoom={7} scrollWheelZoom={true} style={{ height: "100%", width: "100%", zIndex: 1 }}>
-                  <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <MapContainer 
+                  center={[23.6850, 90.3563]} 
+                  zoom={7} 
+                  scrollWheelZoom={true} 
+                  style={{ height: "100%", width: "100%", zIndex: 1 }}
+                >
+                  <TileLayer
+                    attribution='&copy; OpenStreetMap'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
                   
                   {mapNews.map((regionData) => (
-                    <Marker key={regionData.region} position={[regionData.lat, regionData.lng]} icon={newsIcon} eventHandlers={{ click: () => { setSelectedRegionForSidebar(regionData); } }}>
+                    <Marker 
+                      key={regionData.region} 
+                      position={[regionData.lat, regionData.lng]} 
+                      icon={newsIcon}
+                      eventHandlers={{
+                        click: () => {
+                          setSelectedRegionForSidebar(regionData);
+                        },
+                      }}
+                    >
                       <Popup>
                         <div className="p-1 min-w-[200px]">
-                          <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">{regionData.region}</span>
-                          <h4 className="font-bold text-sm mt-2 mb-1 leading-tight line-clamp-2">{regionData.articles[0]?.title}</h4>
+                          <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
+                            {regionData.region}
+                          </span>
+                          <h4 className="font-bold text-sm mt-2 mb-1 leading-tight line-clamp-2">
+                            {regionData.articles[0]?.title}
+                          </h4>
                           <p className="text-xs text-[#64748B] italic">Click pin to view all articles in sidebar</p>
                         </div>
                       </Popup>
@@ -804,19 +1255,32 @@ function NewsFeed() {
                       <Marker position={[crisis.latitude, crisis.longitude]} icon={crisisIcon}>
                         <Popup>
                           <div className="p-1 min-w-[200px]">
-                            <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">CRISIS: {crisis.crisis_type}</span>
+                            <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
+                              CRISIS: {crisis.crisis_type}
+                            </span>
                             <h4 className="font-bold text-sm mt-2 mb-1 leading-tight">{crisis.title}</h4>
                             <p className="text-xs text-slate-500 mt-1 line-clamp-2">{crisis.summary}</p>
                           </div>
                         </Popup>
                       </Marker>
-                      <Circle center={[crisis.latitude, crisis.longitude]} radius={crisis.radius_km * 1000} pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.1, weight: 1 }} />
+                      <Circle 
+                        center={[crisis.latitude, crisis.longitude]} 
+                        radius={crisis.radius_km * 1000} 
+                        pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.1, weight: 1 }}
+                      />
                     </React.Fragment>
                   ))}
 
                   {userLocation && (
                     <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
-                      <Popup><div className="p-1 text-center"><span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">You are here</span><h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4></div></Popup>
+                      <Popup>
+                        <div className="p-1 text-center">
+                          <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
+                            You are here
+                          </span>
+                          <h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4>
+                        </div>
+                      </Popup>
                     </Marker>
                   )}
                 </MapContainer>
@@ -828,28 +1292,37 @@ function NewsFeed() {
                     <div className="sticky top-0 bg-white pb-4 border-b border-slate-200 mb-4 z-10 flex justify-between items-center">
                       <div>
                         <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Viewing News For</span>
-                        <h3 className="text-xl font-extrabold text-[#2563EB] flex items-center gap-1.5 mt-1"><MapPinIcon className="w-5 h-5" /> {selectedRegionForSidebar.region}</h3>
+                        <h3 className="text-xl font-extrabold text-[#2563EB] flex items-center gap-1.5 mt-1">
+                          <MapPinIcon className="w-5 h-5" /> {selectedRegionForSidebar.region}
+                        </h3>
                       </div>
-                      <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">{selectedRegionForSidebar.articles.length} updates</span>
+                      <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                        {selectedRegionForSidebar.articles.length} updates
+                      </span>
                     </div>
 
                     <div className="space-y-4 flex-grow">
                       {selectedRegionForSidebar.articles.map(article => (
                         <div key={article.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm hover:border-[#2563EB] transition-colors">
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded">{article.category}</span>
-                            <span className="text-[10px] font-semibold text-slate-400">{formatDateTime(article.published_at)}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded">
+                              {article.category}
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-400">
+                              {formatDateTime(article.published_at)}
+                            </span>
                           </div>
+                          
                           <a href={article.url} target="_blank" rel="noopener noreferrer" className="block group" onClick={() => handleArticleActivity(article.id, 'click')}>
-                            <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-3">{article.title}</h4>
+                            <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-3">
+                              {article.title}
+                            </h4>
                           </a>
                           
                           <p className="text-xs text-[#64748B] line-clamp-2 mb-2">
-                             {/* Map sidebar translation check */}
                              {translatedArticles[article.id] && article.translation ? article.translation : article.summary}
                           </p>
 
-                          {/* Map sidebar translate button */}
                           {article.translation && (
                             <button 
                               onClick={(e) => { e.preventDefault(); toggleTranslation(article.id); }}
@@ -861,7 +1334,9 @@ function NewsFeed() {
 
                           <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
                             <span className="text-xs font-semibold text-slate-500">Source: <span className="text-slate-700">{article.source}</span></span>
-                            <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#2563EB] hover:underline" onClick={() => handleArticleActivity(article.id, 'click')}>Read Full ↗</a>
+                            <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#2563EB] hover:underline" onClick={() => handleArticleActivity(article.id, 'click')}>
+                              Read Full ↗
+                            </a>
                           </div>
                         </div>
                       ))}
@@ -881,30 +1356,49 @@ function NewsFeed() {
         </section>
 
         {/* Feature 1: Region-Based News Ranking */}
-        <section id="geo-ranking" className="py-20 bg-slate-50 border-t border-[#E2E8F0]">
+        <section id="geo-ranking" className="py-20 bg-white border-t border-[#E2E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl mb-4">Your world, centered around you.</h2>
-              <p className="text-lg text-[#64748B]">Our engine detects your geographical context and ranks database entities accordingly. You see critical local updates first, followed by national and international events.</p>
+              <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl mb-4">
+                Your world, centered around you.
+              </h2>
+              <p className="text-lg text-[#64748B]">
+                Our engine detects your geographical context and ranks database entities accordingly. You see critical local updates first, followed by national and international events.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
               <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-blue-200 via-slate-200 to-slate-200 -z-10 transform -translate-y-1/2"></div>
-              <article className="bg-white rounded-2xl shadow-sm border border-[#2563EB] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md">
-                <div className="absolute -top-4 left-6 bg-[#2563EB] text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1"><MapPinIcon className="w-3 h-3" /> Priority 1: Local</div>
-                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">Dhaka</span> • 2km away</div>
+              
+              <article className="bg-[#F8FAFC] rounded-2xl shadow-sm border border-[#2563EB] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md">
+                <div className="absolute -top-4 left-6 bg-[#2563EB] text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                  <MapPinIcon className="w-3 h-3" /> Priority 1: Local
+                </div>
+                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]">
+                  <span className="font-semibold text-[#0F172A]">Dhaka</span> • 2km away
+                </div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">Water logging alert in Dhanmondi</h3>
                 <p className="text-sm text-[#64748B]">Heavy rainfall has caused severe water logging. Avoid Road 27 if possible.</p>
               </article>
-              <article className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-95">
-                <div className="absolute -top-4 left-6 bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">Priority 2: National</div>
-                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">Bangladesh</span> • Regional</div>
+              
+              <article className="bg-[#F8FAFC] rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-95">
+                <div className="absolute -top-4 left-6 bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                  Priority 2: National
+                </div>
+                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]">
+                  <span className="font-semibold text-[#0F172A]">Bangladesh</span> • Regional
+                </div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">New Taxation Policy Announced</h3>
                 <p className="text-sm text-[#64748B]">The NBR has updated the fiscal year tax brackets for individual taxpayers.</p>
               </article>
-              <article className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-75">
-                <div className="absolute -top-4 left-6 bg-slate-300 text-slate-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">Priority 3: Global</div>
-                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">International</span> • Global</div>
+              
+              <article className="bg-[#F8FAFC] rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-75">
+                <div className="absolute -top-4 left-6 bg-slate-300 text-slate-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                  Priority 3: Global
+                </div>
+                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]">
+                  <span className="font-semibold text-[#0F172A]">International</span> • Global
+                </div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">European Markets Close Higher</h3>
                 <p className="text-sm text-[#64748B]">Tech stocks rally late in the day leading to a positive close across European indices.</p>
               </article>
@@ -913,24 +1407,31 @@ function NewsFeed() {
         </section>
 
         {/* Feature 2: Source Credibility Scoring */}
-        <section id="credibility" className="py-20 bg-white">
+        <section id="credibility" className="py-20 bg-[#F8FAFC]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row items-center gap-16">
+              
               <div className="w-full lg:w-1/2 order-2 lg:order-1">
-                <div className="bg-slate-50 rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
+                <div className="bg-white rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
                   <div className="absolute z-10 bg-white border-2 border-[#2563EB] rounded-xl p-4 shadow-lg w-48 text-center text-sm font-bold text-[#0F172A]">
                     Event Entity: <br/> Election Results
-                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs border border-emerald-200">Score: 92%</div>
+                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs border border-emerald-200">
+                      Score: 92%
+                    </div>
                   </div>
                   <div className="absolute top-8 left-8 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
-                     <div className="w-6 h-6 rounded bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">B</div><span className="text-xs font-semibold">BBC News</span>
+                     <div className="w-6 h-6 rounded bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">B</div>
+                     <span className="text-xs font-semibold">BBC News</span>
                   </div>
                   <div className="absolute top-8 right-8 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
-                     <div className="w-6 h-6 rounded bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">R</div><span className="text-xs font-semibold">Reuters</span>
+                     <div className="w-6 h-6 rounded bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">R</div>
+                     <span className="text-xs font-semibold">Reuters</span>
                   </div>
                   <div className="absolute bottom-8 right-16 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
-                     <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">A</div><span className="text-xs font-semibold">Al Jazeera</span>
+                     <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">A</div>
+                     <span className="text-xs font-semibold">Al Jazeera</span>
                   </div>
+
                   <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
                     <line x1="20%" y1="20%" x2="40%" y2="40%" stroke="#10B981" strokeWidth="2" strokeDasharray="4 4" />
                     <line x1="80%" y1="20%" x2="60%" y2="40%" stroke="#10B981" strokeWidth="2" strokeDasharray="4 4" />
@@ -943,19 +1444,39 @@ function NewsFeed() {
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-sm uppercase tracking-wide">
                   <ShieldCheckIcon className="w-4 h-4" /> Database-Verified Trust
                 </div>
-                <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl">Truth through consensus.</h2>
-                <p className="text-lg text-[#64748B]">In an era of misinformation, single-source news isn't enough. Our backend algorithms map news articles to specific events and calculate a dynamic credibility score based on the weight and volume of trusted sources reporting it.</p>
+                <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl">
+                  Truth through consensus.
+                </h2>
+                <p className="text-lg text-[#64748B]">
+                  In an era of misinformation, single-source news isn't enough. Our backend algorithms map news articles to specific events and calculate a dynamic credibility score based on the weight and volume of trusted sources reporting it.
+                </p>
+                
                 <ul className="space-y-4 mt-6">
                   <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1"><div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center"><svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg></div></div>
-                    <div><p className="font-semibold text-[#0F172A]">High Credibility ({'>'}80%)</p><p className="text-sm text-[#64748B]">Event verified by multiple established global and national sources.</p></div>
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-[#0F172A]">High Credibility ({'>'}80%)</p>
+                      <p className="text-sm text-[#64748B]">Event verified by multiple established global and national sources.</p>
+                    </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1"><div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center"><svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div></div>
-                    <div><p className="font-semibold text-[#0F172A]">Low Credibility ({'<'}50%)</p><p className="text-sm text-[#64748B]">Single-source report from an unverified or historically biased publication.</p></div>
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-[#0F172A]">Low Credibility ({'<'}50%)</p>
+                      <p className="text-sm text-[#64748B]">Single-source report from an unverified or historically biased publication.</p>
+                    </div>
                   </li>
                 </ul>
               </div>
+
             </div>
           </div>
         </section>
@@ -992,6 +1513,45 @@ function NewsFeed() {
           </div>
         </footer>
 
+        {/* Share Modal Overlay */}
+        {shareModalData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative transform transition-transform">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 className="text-lg font-bold text-[#0F172A] flex items-center gap-2">
+                  <ShareIcon className="w-5 h-5 text-blue-600"/> Share Article
+                </h3>
+                <button onClick={() => setShareModalData(null)} className="text-slate-400 hover:text-slate-700 bg-white rounded-full p-1 border">✕</button>
+              </div>
+              <div className="p-6">
+                <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-6 line-clamp-2">{shareModalData.title}</h4>
+                
+                <div className="flex items-center gap-2 mb-6 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                  <input type="text" readOnly value={shareModalData.shareUrl} className="bg-transparent flex-1 text-sm text-slate-500 focus:outline-none pl-2 truncate"/>
+                  <button onClick={copyToClipboard} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-xs font-bold transition-colors flex items-center gap-1 min-w-[80px] justify-center">
+                    {linkCopied ? <><CheckIcon className="w-3 h-3"/> Copied</> : 'Copy'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareModalData.shareUrl)}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors">
+                    <span className="font-bold text-lg">f</span>
+                    <span className="text-xs font-semibold">Facebook</span>
+                  </a>
+                  <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareModalData.title + ' ' + shareModalData.shareUrl)}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 p-3 bg-green-50 text-green-700 rounded-xl hover:bg-green-100 transition-colors">
+                    <span className="font-bold text-lg">✆</span>
+                    <span className="text-xs font-semibold">WhatsApp</span>
+                  </a>
+                  <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareModalData.shareUrl)}&text=${encodeURIComponent(shareModalData.title)}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 p-3 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-colors">
+                    <span className="font-bold text-lg">𝕏</span>
+                    <span className="text-xs font-semibold">Twitter</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Authentication Modal */}
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -1003,9 +1563,15 @@ function NewsFeed() {
                 {authError && <div className={`p-3 mb-4 text-sm rounded-lg ${authError.includes('successful') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>{authError}</div>}
                 <form onSubmit={handleAuthSubmit} className="space-y-4">
                   {authMode === "signup" && (
-                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label><input type="text" required value={authName} onChange={(e) => setAuthName(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="John Doe"/></div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                      <input type="text" required value={authName} onChange={(e) => setAuthName(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="John Doe"/>
+                    </div>
                   )}
-                  <div><label className="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="you@example.com"/></div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                    <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]" placeholder="you@example.com"/>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                     <div className="relative">
@@ -1028,11 +1594,44 @@ function NewsFeed() {
   );
 }
 
+// MAIN APP ROUTER
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem('kagojer_user');
+    // Fulfills "Assume user_id = 1"
+    return savedUser ? JSON.parse(savedUser) : { userId: 1, name: "Mehrab Mugdho", email: "mehrab@example.com" }; 
+  });
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('kagojer_user');
+    window.location.href = '/';
+  };
+
   return (
     <Router>
       <Routes>
         <Route path="/" element={<NewsFeed />} />
+        
+        {/* Share Link Route (Highlights specific article) */}
+        <Route path="/news/:articleId" element={<NewsFeed />} />
+        
+        {/* User Dashboard Route */}
+        <Route path="/profile" element={
+          <div className="min-h-screen bg-[#F8FAFC]">
+            <nav className="sticky top-0 z-40 w-full bg-white border-b border-[#E2E8F0]">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+                <Link to="/" className="flex items-center gap-2 cursor-pointer group">
+                  <div className="w-8 h-8 rounded bg-[#2563EB] text-white flex items-center justify-center font-bold text-lg">ক</div>
+                  <span className="font-bold text-xl tracking-tight text-[#0F172A]">কাগজের স্তূপ</span>
+                </Link>
+                <Link to="/" className="text-sm font-semibold text-[#2563EB] bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors">← Back to News</Link>
+              </div>
+            </nav>
+            <UserProfile currentUser={currentUser} handleLogout={handleLogout} />
+          </div>
+        } />
+
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </Router>
