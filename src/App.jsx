@@ -23,16 +23,6 @@ const crisisIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-// Custom Blue Icon for Standard Breaking News
-const newsIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
 // --- Icons ---
 const MapPinIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -98,22 +88,20 @@ function NewsFeed() {
   // Filter States
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeSource, setActiveSource] = useState("All");
+  const [searchQuery, setSearchQuery] = useState(""); // NEW: Search state
   
-  // Alert & Map State (Feature 6 & 8)
-  const [activeAlert, setActiveAlert] = useState(null); 
-  const [localCrisisAlert, setLocalCrisisAlert] = useState(null); 
+  // Alert & Location State (Feature 6)
+  const [activeAlert, setActiveAlert] = useState(null); // Passive region alert
+  const [localCrisisAlert, setLocalCrisisAlert] = useState(null); // Active GPS proximity alert
   const [isLocating, setIsLocating] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
-  
   const [mapCrises, setMapCrises] = useState([]);
-  const [mapNews, setMapNews] = useState([]); // Array of grouped articles by region
-  const [selectedRegionForSidebar, setSelectedRegionForSidebar] = useState(null); // The region currently clicked on map
   
   const [expandedSummaries, setExpandedSummaries] = useState({});
   const [newsFeed, setNewsFeed] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Authentication State
+  // --- Authentication State ---
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('kagojer_user');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -125,12 +113,12 @@ function NewsFeed() {
   const [localVotes, setLocalVotes] = useState({});
   const [followedSources, setFollowedSources] = useState([]);
   
+  // Form State
   const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
 
-  // Initial Data Fetching
   useEffect(() => {
     const fetchNews = async () => {
       setIsLoading(true);
@@ -143,8 +131,10 @@ function NewsFeed() {
         const data = await response.json();
         setNewsFeed(Array.isArray(data) ? data : []);
         
+        // Reset sub-filters when region changes
         setActiveCategory("All");
         setActiveSource("All");
+        setSearchQuery(""); // Reset search on region change
         setExpandedSummaries({});
         setIsLoading(false);
       } catch (error) {
@@ -154,19 +144,16 @@ function NewsFeed() {
     };
     fetchNews();
 
-    // Fetch Map Data (Crises AND standard Breaking News)
-    const fetchMapData = async () => {
+    // Fetch Active Crises for the Map
+    const fetchMapCrises = async () => {
       try {
-        const crisesRes = await fetch('https://kagojerstup.onrender.com/api/crises');
-        if (crisesRes.ok) setMapCrises(await crisesRes.json());
-
-        const mapNewsRes = await fetch('https://kagojerstup.onrender.com/api/map-news');
-        if (mapNewsRes.ok) setMapNews(await mapNewsRes.json());
+        const response = await fetch('https://kagojerstup.onrender.com/api/crises');
+        if (response.ok) setMapCrises(await response.json());
       } catch (error) {
-        console.error("Failed to fetch map data:", error);
+        console.error("Failed to fetch map crises:", error);
       }
     };
-    fetchMapData();
+    fetchMapCrises();
   }, [activeRegion, currentUser]); 
 
   // Passive alerts based on region dropdown
@@ -189,7 +176,6 @@ function NewsFeed() {
     return () => clearInterval(intervalId); 
   }, [activeRegion]);
 
-  // Load User Info
   useEffect(() => {
     const fetchUserData = async () => {
       if (!currentUser) {
@@ -319,7 +305,6 @@ function NewsFeed() {
         const lon = position.coords.longitude;
         setUserLocation({ lat, lng: lon });
 
-        // 1. Check for Active Crisis near User
         const alertRes = await fetch('https://kagojerstup.onrender.com/api/check-crisis-alert', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -332,7 +317,6 @@ function NewsFeed() {
           setLocalCrisisAlert(null); 
         }
         
-        // 2. Reverse-geocode to get the city name
         const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
         const data = await response.json();
         const city = data.city || data.locality || "Dhaka"; 
@@ -379,10 +363,18 @@ function NewsFeed() {
   const uniqueCategories = ["All", ...new Set(newsFeed.map(item => item.category).filter(Boolean))];
   const uniqueSources = ["All", ...new Set(newsFeed.flatMap(item => item.sources).filter(Boolean))];
 
+  // --- NEW: Updated Filtering Logic ---
   const filteredFeed = newsFeed.filter(news => {
     const matchCategory = activeCategory === 'All' || news.category === activeCategory;
     const matchSource = activeSource === 'All' || news.sources.includes(activeSource);
-    return matchCategory && matchSource;
+    
+    // Check if the search query matches the title or the summary
+    const query = searchQuery.toLowerCase();
+    const matchSearch = searchQuery === "" || 
+      (news.title && news.title.toLowerCase().includes(query)) || 
+      (news.summary && news.summary.toLowerCase().includes(query));
+      
+    return matchCategory && matchSource && matchSearch;
   });
 
   return (
@@ -391,12 +383,6 @@ function NewsFeed() {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
         body { font-family: 'Plus Jakarta Sans', 'Hind Siliguri', sans-serif; }
-        
-        /* Map Sidebar Custom Scrollbar */
-        .map-sidebar::-webkit-scrollbar { width: 6px; }
-        .map-sidebar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
-        .map-sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
-        .map-sidebar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
       `}} />
 
       <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] selection:bg-blue-200 selection:text-blue-900">
@@ -450,7 +436,7 @@ function NewsFeed() {
               <div className="hidden md:flex space-x-8">
                 <a href="#" className="text-[#0F172A] font-medium hover:text-[#2563EB]">Home</a>
                 <a href="#live-feed" className="text-[#64748B] font-medium hover:text-[#2563EB]">Live Feed</a>
-                <a href="#news-map" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><MapPinIcon className="w-4 h-4"/> Global Map</a>
+                <a href="#crisis-map" className="text-red-600 font-bold hover:text-red-700 flex items-center gap-1"><AlertTriangleIcon className="w-4 h-4"/> Crisis Map</a>
               </div>
               <div className="flex items-center gap-4">
                 {currentUser ? (
@@ -491,6 +477,7 @@ function NewsFeed() {
                   Stop scrolling through global noise. Get instantly ranked news based on your location, verified by cross-referencing multiple trusted sources for uncompromised credibility.
                 </p>
                 
+                {/* Location Input & CTAs */}
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row gap-3 max-w-lg">
                     <div className="relative flex-grow group">
@@ -501,6 +488,7 @@ function NewsFeed() {
                         value={activeRegion}
                         onChange={(e) => setActiveRegion(e.target.value)}
                         className="block w-full pl-10 pr-12 py-3 border border-[#E2E8F0] rounded-lg leading-5 bg-[#F8FAFC] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] focus:bg-white transition-all sm:text-sm font-medium appearance-none cursor-pointer"
+                        aria-label="Your location"
                       >
                         <option value="All">All Bangladesh</option>
                         <option value="Dhaka">Dhaka</option>
@@ -529,6 +517,11 @@ function NewsFeed() {
                       <SearchIcon className="w-5 h-5" /> Explore Local News
                     </a>
                   </div>
+                  <div className="flex items-center gap-4 text-sm font-medium">
+                    <a href="#credibility" className="text-[#64748B] hover:text-[#0F172A] transition-colors flex items-center gap-1">
+                      <ShieldCheckIcon className="w-4 h-4" /> Learn how we score credibility
+                    </a>
+                  </div>
                 </div>
               </div>
 
@@ -550,6 +543,15 @@ function NewsFeed() {
                   <p className="text-[#64748B] mb-6 line-clamp-2">
                     Authorities announce extended night operations for Line 6 starting next month to accommodate growing commuter demand in the capital, following multiple successful trials.
                   </p>
+                  <div className="pt-4 border-t border-[#E2E8F0] flex justify-between items-center">
+                    <div className="flex -space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-600">DS</div>
+                      <div className="w-8 h-8 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-700">DT</div>
+                    </div>
+                    <span className="text-xs font-semibold text-[#64748B] flex items-center gap-1">
+                      <ClockIcon className="w-3.5 h-3.5" /> Just updated
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -560,20 +562,45 @@ function NewsFeed() {
         {/* Feature 3: Live News Preview */}
         <section id="live-feed" className="py-20 bg-[#F8FAFC] border-t border-[#E2E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-10 gap-6">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#0F172A] mb-2">Live News Stream</h2>
                 <p className="text-[#64748B]">Ranked for: <strong className="text-[#0F172A]">{activeRegion === 'All' ? 'Bangladesh (National)' : activeRegion}</strong></p>
               </div>
               
+              {/* Filter & Search Dropdowns */}
               <div className="flex flex-wrap gap-3 w-full lg:w-auto">
-                <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)} className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#2563EB] cursor-pointer shadow-sm">
+                
+                {/* NEW: Keyword Search Input */}
+                <div className="relative flex-grow md:flex-grow-0 w-full md:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <SearchIcon className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search keywords..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-9 pr-3 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] shadow-sm transition-colors"
+                  />
+                </div>
+
+                <select 
+                  value={activeCategory}
+                  onChange={(e) => setActiveCategory(e.target.value)}
+                  className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
+                >
                   {uniqueCategories.map(category => (
                     <option key={category} value={category}>{category === 'All' ? 'All Categories' : category}</option>
                   ))}
                 </select>
 
-                <select value={activeSource} onChange={(e) => setActiveSource(e.target.value)} className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#2563EB] cursor-pointer shadow-sm">
+                <select 
+                  value={activeSource}
+                  onChange={(e) => setActiveSource(e.target.value)}
+                  className="flex-1 lg:flex-none px-4 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] cursor-pointer shadow-sm"
+                >
                   {uniqueSources.map(source => (
                     <option key={source} value={source}>{source === 'All' ? 'All Portals' : source}</option>
                   ))}
@@ -589,6 +616,18 @@ function NewsFeed() {
               ) : filteredFeed.length === 0 ? (
                 <div className="col-span-full py-12 text-center bg-white border border-[#E2E8F0] rounded-xl">
                   <p className="text-[#64748B] text-lg font-medium">No articles found matching your filters for {activeRegion}.</p>
+                  {(activeCategory !== 'All' || activeSource !== 'All' || searchQuery !== "") && (
+                    <button 
+                      onClick={() => {
+                        setActiveCategory('All'); 
+                        setActiveSource('All');
+                        setSearchQuery(""); // Clear search as well
+                      }} 
+                      className="mt-4 text-[#2563EB] font-semibold hover:underline focus:outline-none"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
                 </div>
               ) : (
                 filteredFeed.map((news) => (
@@ -602,7 +641,9 @@ function NewsFeed() {
                           </span>
                         </div>
                         <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-md border transition-colors
-                          ${news.score >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : news.score >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-red-50 text-red-800 border-red-200'}`}>
+                          ${news.score >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 
+                            news.score >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 
+                            'bg-red-50 text-red-800 border-red-200'}`}>
                           <ShieldCheckIcon className="w-3.5 h-3.5" /> {news.score}% Trust Score
                         </div>
                       </div>
@@ -618,7 +659,10 @@ function NewsFeed() {
                           {news.summary}
                         </p>
                         {news.summary && news.summary.length > 100 && (
-                          <button onClick={(e) => { e.preventDefault(); toggleSummary(news.id); }} className="mt-2 text-xs font-bold text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer">
+                          <button 
+                            onClick={(e) => { e.preventDefault(); toggleSummary(news.id); }}
+                            className="mt-2 text-xs font-bold text-[#2563EB] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+                          >
                             <span>✨</span> {expandedSummaries[news.id] ? 'Hide Summary' : 'Read AI Summary'}
                           </button>
                         )}
@@ -632,10 +676,17 @@ function NewsFeed() {
                           const isFollowed = followedSources.includes(source);
                           return (
                             <div key={idx} className="flex items-center bg-slate-100 rounded overflow-hidden shadow-sm relative z-10">
-                              <button onClick={() => setActiveSource(source)} className="text-xs font-semibold text-[#0F172A] hover:bg-blue-100 hover:text-blue-700 px-2 py-1 transition-colors">
+                              <button 
+                                onClick={() => setActiveSource(source)}
+                                className="text-xs font-semibold text-[#0F172A] hover:bg-blue-100 hover:text-blue-700 px-2 py-1 transition-colors"
+                              >
                                 {source}
                               </button>
-                              <button onClick={() => handleFollowToggle(source)} className={`px-2 py-1 text-xs border-l border-white transition-colors cursor-pointer ${isFollowed ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-slate-200 text-slate-400 hover:bg-slate-300 hover:text-slate-600'}`}>
+                              <button
+                                onClick={() => handleFollowToggle(source)}
+                                className={`px-2 py-1 text-xs border-l border-white transition-colors cursor-pointer 
+                                  ${isFollowed ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-slate-200 text-slate-400 hover:bg-slate-300 hover:text-slate-600'}`}
+                              >
                                 ★
                               </button>
                             </div>
@@ -649,10 +700,16 @@ function NewsFeed() {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-slate-400 font-medium mr-1">Verify:</span>
-                          <button onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_real'); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_real' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                          <button 
+                            onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_real'); }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_real' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+                          >
                             <ThumbsUpIcon className="w-4 h-4" /> Real 
                           </button>
-                          <button onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_fake'); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_fake' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                          <button 
+                            onClick={(e) => { e.preventDefault(); handleVote(news.id, 'vote_fake'); }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border ${localVotes[news.id] === 'vote_fake' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-slate-50 text-slate-600 border-slate-200'}`}
+                          >
                             <ThumbsDownIcon className="w-4 h-4" /> Fake 
                           </button>
                         </div>
@@ -665,149 +722,62 @@ function NewsFeed() {
           </div>
         </section>
 
-        {/* Feature 8: Location-Based Breaking News Map */}
-        <section id="news-map" className="py-20 bg-white border-t border-[#E2E8F0]">
+        {/* NEW CRISIS MAP SECTION */}
+        <section id="crisis-map" className="py-20 bg-white border-t border-[#E2E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <MapPinIcon className="w-6 h-6 text-[#2563EB]" />
-                  <h2 className="text-3xl font-extrabold text-[#0F172A]">Interactive News Map</h2>
+                  <AlertTriangleIcon className="w-6 h-6 text-red-600" />
+                  <h2 className="text-3xl font-extrabold text-[#0F172A]">Live Crisis Map</h2>
                 </div>
-                <p className="text-[#64748B]">Click on a <strong className="text-blue-600">blue pin</strong> to see breaking news, or a <strong className="text-red-600">red pin</strong> for active crises.</p>
+                <p className="text-[#64748B]">Real-time physical locations of major events extracted from validated news sources.</p>
               </div>
             </div>
 
-            {/* Split View: Map (Left) and Sidebar (Right) */}
-            <div className="flex flex-col lg:flex-row gap-6 h-auto lg:h-[600px] w-full">
-              
-              {/* The Interactive Map */}
-              <div className="w-full lg:w-2/3 h-[400px] lg:h-full rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-md relative z-10 bg-slate-100">
-                <MapContainer 
-                  center={[23.6850, 90.3563]} 
-                  zoom={7} 
-                  scrollWheelZoom={false}
-                  style={{ height: "100%", width: "100%", zIndex: 1 }}
-                >
-                  <TileLayer
-                    attribution='&copy; OpenStreetMap'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  
-                  {/* Draw standard breaking news (Blue Pins) */}
-                  {mapNews.map((regionData) => (
-                    <Marker 
-                      key={regionData.region} 
-                      position={[regionData.lat, regionData.lng]} 
-                      icon={newsIcon}
-                      eventHandlers={{
-                        click: () => {
-                          setSelectedRegionForSidebar(regionData);
-                        },
-                      }}
-                    >
+            <div className="h-[500px] w-full rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-md relative z-10">
+              <MapContainer 
+                center={[23.6850, 90.3563]} // Center of Bangladesh
+                zoom={7} 
+                scrollWheelZoom={false}
+                style={{ height: "100%", width: "100%", zIndex: 1 }}
+              >
+                <TileLayer
+                  attribution='&copy; OpenStreetMap'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                
+                {/* Draw active crises on map */}
+                {mapCrises.map((crisis) => (
+                  <React.Fragment key={crisis.crisis_id}>
+                    <Marker position={[crisis.latitude, crisis.longitude]} icon={crisisIcon}>
                       <Popup>
                         <div className="p-1 min-w-[200px]">
-                          <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                            {regionData.region}
+                          <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
+                            {crisis.crisis_type}
                           </span>
-                          <h4 className="font-bold text-sm mt-2 mb-1 leading-tight line-clamp-2">
-                            {regionData.articles[0]?.title}
-                          </h4>
-                          <p className="text-xs text-[#64748B] italic">Click pin to view all articles in sidebar</p>
+                          <h4 className="font-bold text-sm mt-2 mb-1 leading-tight">{crisis.title}</h4>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{crisis.summary}</p>
                         </div>
                       </Popup>
                     </Marker>
-                  ))}
+                    
+                    {/* Draw the danger radius (convert km to meters) */}
+                    <Circle 
+                      center={[crisis.latitude, crisis.longitude]} 
+                      radius={crisis.radius_km * 1000} 
+                      pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.1, weight: 1 }}
+                    />
+                  </React.Fragment>
+                ))}
 
-                  {/* Draw active crises (Red Pins & Radius) */}
-                  {mapCrises.map((crisis) => (
-                    <React.Fragment key={crisis.crisis_id}>
-                      <Marker position={[crisis.latitude, crisis.longitude]} icon={crisisIcon}>
-                        <Popup>
-                          <div className="p-1 min-w-[200px]">
-                            <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                              CRISIS: {crisis.crisis_type}
-                            </span>
-                            <h4 className="font-bold text-sm mt-2 mb-1 leading-tight">{crisis.title}</h4>
-                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{crisis.summary}</p>
-                          </div>
-                        </Popup>
-                      </Marker>
-                      <Circle 
-                        center={[crisis.latitude, crisis.longitude]} 
-                        radius={crisis.radius_km * 1000} 
-                        pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.1, weight: 1 }}
-                      />
-                    </React.Fragment>
-                  ))}
-
-                  {/* Draw user's live location if enabled */}
-                  {userLocation && (
-                    <Marker position={[userLocation.lat, userLocation.lng]}>
-                      <Popup>Your Location</Popup>
-                    </Marker>
-                  )}
-                </MapContainer>
-              </div>
-
-              {/* The Dynamic Sidebar */}
-              <div className="w-full lg:w-1/3 h-[500px] lg:h-full bg-slate-50 border border-[#E2E8F0] rounded-2xl p-4 overflow-y-auto map-sidebar shadow-inner flex flex-col">
-                {selectedRegionForSidebar ? (
-                  <>
-                    <div className="sticky top-0 bg-slate-50 pb-4 border-b border-slate-200 mb-4 z-10 flex justify-between items-center">
-                      <div>
-                        <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Viewing News For</span>
-                        <h3 className="text-xl font-extrabold text-[#2563EB] flex items-center gap-1.5 mt-1">
-                          <MapPinIcon className="w-5 h-5" /> {selectedRegionForSidebar.region}
-                        </h3>
-                      </div>
-                      <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                        {selectedRegionForSidebar.articles.length} updates
-                      </span>
-                    </div>
-
-                    <div className="space-y-4 flex-grow">
-                      {selectedRegionForSidebar.articles.map(article => (
-                        <div key={article.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 transition-colors">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                              {article.category}
-                            </span>
-                            <span className="text-[10px] font-semibold text-slate-400">
-                              {formatDateTime(article.published_at)}
-                            </span>
-                          </div>
-                          
-                          <a href={article.url} target="_blank" rel="noopener noreferrer" className="block group">
-                            <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-3">
-                              {article.title}
-                            </h4>
-                          </a>
-                          
-                          <p className="text-xs text-[#64748B] line-clamp-2 mb-3">
-                            {article.summary}
-                          </p>
-                          
-                          <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
-                            <span className="text-xs font-semibold text-slate-500">Source: <span className="text-slate-700">{article.source}</span></span>
-                            <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#2563EB] hover:underline">
-                              Read Full ↗
-                            </a>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex-grow flex flex-col items-center justify-center text-center px-6 opacity-50">
-                    <MapPinIcon className="w-16 h-16 text-slate-300 mb-4" />
-                    <h3 className="text-lg font-bold text-slate-500">No Region Selected</h3>
-                    <p className="text-sm text-slate-400 mt-2">Click on any blue pin on the map to explore breaking news from that specific area.</p>
-                  </div>
+                {/* Draw the user's location if known */}
+                {userLocation && (
+                  <Marker position={[userLocation.lat, userLocation.lng]}>
+                    <Popup>Your Location</Popup>
+                  </Marker>
                 )}
-              </div>
-
+              </MapContainer>
             </div>
           </div>
         </section>
@@ -864,6 +834,7 @@ function NewsFeed() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row items-center gap-16">
               <div className="w-full lg:w-1/2 order-2 lg:order-1">
+                {/* Visual DB Node Representation */}
                 <div className="bg-slate-50 rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
                   <div className="absolute z-10 bg-white border-2 border-[#2563EB] rounded-xl p-4 shadow-lg w-48 text-center text-sm font-bold text-[#0F172A]">
                     Event Entity: <br/> Election Results
@@ -871,6 +842,7 @@ function NewsFeed() {
                       Score: 92%
                     </div>
                   </div>
+                  {/* Source Nodes */}
                   <div className="absolute top-8 left-8 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
                      <div className="w-6 h-6 rounded bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">B</div>
                      <span className="text-xs font-semibold">BBC News</span>
@@ -901,6 +873,7 @@ function NewsFeed() {
                 <p className="text-lg text-[#64748B]">
                   In an era of misinformation, single-source news isn't enough. Our backend algorithms map news articles to specific events and calculate a dynamic credibility score based on the weight and volume of trusted sources reporting it.
                 </p>
+                
                 <ul className="space-y-4 mt-6">
                   <li className="flex items-start gap-3">
                     <div className="flex-shrink-0 mt-1">
@@ -949,7 +922,7 @@ function NewsFeed() {
               <ul className="space-y-2 text-sm text-slate-400">
                 <li><a href="#" className="hover:text-white transition-colors">Local News</a></li>
                 <li><a href="#credibility" className="hover:text-white transition-colors">Credibility Engine</a></li>
-                <li><a href="#news-map" className="hover:text-white transition-colors">Interactive Map</a></li>
+                <li><a href="#crisis-map" className="hover:text-white transition-colors">Crisis Alerts</a></li>
               </ul>
             </div>
 
@@ -961,13 +934,23 @@ function NewsFeed() {
               </ul>
             </div>
           </div>
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-sm text-slate-500 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p>&copy; 2026 কাগজের স্তূপ. All rights reserved.</p>
+            <div className="flex gap-4">
+              <a href="#" className="hover:text-white transition-colors">Privacy</a>
+              <a href="#" className="hover:text-white transition-colors">Terms</a>
+            </div>
+          </div>
         </footer>
 
         {/* Authentication Modal */}
         {isAuthModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
-              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">✕</button>
+              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700">
+                ✕
+              </button>
               <div className="p-8">
                 <h2 className="text-2xl font-bold text-[#0F172A] mb-2">{authMode === "login" ? "Sign In required" : "Create an account"}</h2>
                 <p className="text-[#64748B] text-sm mb-6">
@@ -988,7 +971,14 @@ function NewsFeed() {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                     <div className="relative">
-                      <input type={showPassword ? "text" : "password"} required value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:outline-none pr-10" placeholder="••••••••"/>
+                      <input 
+                        type={showPassword ? "text" : "password"} 
+                        required 
+                        value={authPassword} 
+                        onChange={(e) => setAuthPassword(e.target.value)} 
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#2563EB] focus:outline-none pr-10" 
+                        placeholder="••••••••"
+                      />
                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-700">
                         {showPassword ? "🙈" : "👁️"}
                       </button>
