@@ -196,8 +196,9 @@ app.get('/api/news/personalized', async (req, res) => {
       }
 
       // Penalty: Age Degradation (Older news loses relevance)
-      const hoursOld = (new Date() - new Date(row.time)) / (1000 * 60 * 60);
-      personalSortWeight -= (hoursOld * 0.5);
+      const hoursOld = Math.max(0, (new Date() - new Date(row.time)) / (1000 * 60 * 60));
+      // THE FIX: Cap the maximum age penalty at 30 points so older high-quality news isn't destroyed
+      personalSortWeight -= Math.min(hoursOld * 0.5, 30);
 
       return {
         id: row.id,
