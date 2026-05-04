@@ -775,10 +775,37 @@ function NewsFeed() {
   // ==========================================
   // HELPER: RENDER NEWS CARD
   // ==========================================
-  const renderNewsCard = (news, isHighlighted = false, rank = null) => {
+  const renderNewsCard = (news, isHighlighted = false, rank = null, compact = false) => {
     const articleId = news.id || news.article_id;
     const isBookmarked = bookmarkedArticleIds.includes(articleId);
 
+    // --- NEW: COMPACT CARD FOR HORIZONTAL SCROLLING ---
+    if (compact) {
+      return (
+        <article key={articleId} className="bg-white border border-[#E2E8F0] rounded-2xl p-5 hover:border-[#2563EB] hover:shadow-lg transition-all flex flex-col justify-between w-80 flex-shrink-0 snap-center">
+          <div className="flex justify-between items-start mb-3 gap-2">
+            <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">{news.category}</span>
+            <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${news.score >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : news.score >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-red-50 text-red-800 border-red-200'}`}>
+              <ShieldCheckIcon className="w-3 h-3" /> {news.score}%
+            </div>
+          </div>
+          <h3 className="text-sm font-bold text-[#0F172A] mb-2 hover:text-[#2563EB] transition-colors leading-snug line-clamp-3">
+            <a href={news.url || news.article_url || "#"} target="_blank" rel="noopener noreferrer" onClick={() => handleArticleClick(articleId)}>{news.title}</a>
+          </h3>
+          <p className="text-xs text-[#64748B] line-clamp-2 mb-4">{translatedArticles[articleId] && news.translation ? news.translation : news.summary}</p>
+          <div className="mt-auto pt-3 border-t border-[#E2E8F0] flex justify-between items-center gap-2">
+             <span className="text-[10px] font-bold text-slate-500 truncate max-w-[100px]">{news.sources ? news.sources[0] : news.source_name}</span>
+             <div className="flex gap-1">
+                <button onClick={() => handleBookmark(articleId)} className={`p-1.5 rounded-full border transition-colors ${isBookmarked ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-white text-slate-400 border-[#E2E8F0] hover:text-blue-500 hover:bg-blue-50'}`}>
+                  {isBookmarked ? <BookmarkSolidIcon className="w-3 h-3"/> : <BookmarkOutlineIcon className="w-3 h-3"/>}
+                </button>
+             </div>
+          </div>
+        </article>
+      );
+    }
+
+    // --- STANDARD FULL-SIZE CARD ---
     return (
       <article key={articleId} className={`bg-white border rounded-2xl p-6 transition-all flex flex-col justify-between h-full relative overflow-hidden group
         ${isHighlighted ? 'border-blue-500 shadow-xl shadow-blue-900/10 ring-2 ring-blue-200 mb-8' : 'border-[#E2E8F0] hover:border-[#2563EB] hover:shadow-lg'}
@@ -879,7 +906,6 @@ function NewsFeed() {
           </div>
         </div>
         
-        {/* FOOTER FIX: Added flex-wrap and gap-y-3 to fix UI overflow on small screens */}
         <div className="pt-4 border-t border-[#E2E8F0] flex flex-wrap justify-between items-center gap-y-3 gap-x-2 relative z-10 mt-2">
           <div className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
             <ClockIcon className="w-3.5 h-3.5" /> {formatDateTime(news.time || news.published_at)}
@@ -958,7 +984,7 @@ function NewsFeed() {
         /* Hide scrollbar for horizontal scrolling but allow scroll */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
+
         .map-sidebar::-webkit-scrollbar { width: 6px; }
         .map-sidebar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
         .map-sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
