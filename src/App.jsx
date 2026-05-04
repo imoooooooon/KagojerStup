@@ -13,129 +13,31 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Custom Red Icon for Crisis Events
-const crisisIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
+// Custom Icons for Map
+const crisisIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
+const newsIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
+const userLocationIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
 
-// Custom Blue Icon for Standard Breaking News
-const newsIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-// Custom Green Icon for User's Live Location
-const userLocationIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-// --- Icons ---
-const MapPinIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
-
-const ShieldCheckIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-  </svg>
-);
-
-const SearchIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
-);
-
-const ThumbsUpIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-  </svg>
-);
-
-const ThumbsDownIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
-  </svg>
-);
-
-const LayersIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-  </svg>
-);
-
-const ClockIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
-const AlertTriangleIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-  </svg>
-);
-
-const TrendingIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-  </svg>
-);
-
-const UserIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-  </svg>
-);
-
-const ShareIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-  </svg>
-);
-
-const BookmarkOutlineIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-  </svg>
-);
-
-const BookmarkSolidIcon = ({ className }) => (
-  <svg className={className} fill="currentColor" viewBox="0 0 20 20">
-    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-  </svg>
-);
-
-const CheckIcon = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-  </svg>
-);
+// --- SVG Icons ---
+const MapPinIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>);
+const ShieldCheckIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>);
+const SearchIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>);
+const ThumbsUpIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>);
+const ThumbsDownIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" /></svg>);
+const ClockIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>);
+const AlertTriangleIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>);
+const TrendingIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>);
+const UserIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>);
+const ShareIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>);
+const BookmarkOutlineIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>);
+const BookmarkSolidIcon = ({ className }) => (<svg className={className} fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" /></svg>);
+const CheckIcon = ({ className }) => (<svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>);
 
 const formatDateTime = (dateString) => {
   if (!dateString) return "Unknown Date";
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return dateString; 
-  return date.toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
-  });
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
 };
 
 // ==========================================
@@ -162,9 +64,7 @@ function UserProfile({ currentUser, handleLogout }) {
         setBookmarks(await bookRes.json());
         setActivities(await actRes.json());
         setFollows(await folRes.json());
-      } catch (error) { 
-        console.error("Error loading dashboard", error); 
-      }
+      } catch (error) { console.error("Error loading dashboard", error); }
       setIsLoading(false);
     };
     loadDashboard();
@@ -276,7 +176,7 @@ function NewsFeed() {
   const [activeSource, setActiveSource] = useState("All");
   const [searchQuery, setSearchQuery] = useState(""); 
   
-  // Alert & Map State (Feature 6 & 8)
+  // Alert & Map State
   const [activeAlert, setActiveAlert] = useState(null); 
   const [localCrisisAlert, setLocalCrisisAlert] = useState(null); 
   const [isLocating, setIsLocating] = useState(false);
@@ -286,7 +186,7 @@ function NewsFeed() {
   const [mapNews, setMapNews] = useState([]); 
   const [selectedRegionForSidebar, setSelectedRegionForSidebar] = useState(null); 
   
-  // Trending State (Feature 5)
+  // Trending State
   const [trendingNews, setTrendingNews] = useState([]);
   const [trendingWindow, setTrendingWindow] = useState("24h");
   const [isTrendingLoading, setIsTrendingLoading] = useState(true);
@@ -301,7 +201,7 @@ function NewsFeed() {
   // Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('kagojer_user');
-    return savedUser ? JSON.parse(savedUser) : { userId: 1, name: "Mehrab Mugdho", email: "mehrab@example.com" }; // Fulfills "Assume logged-in user is 1"
+    return savedUser ? JSON.parse(savedUser) : { userId: 1, name: "Mehrab Mugdho", email: "mehrab@example.com" }; 
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -309,7 +209,7 @@ function NewsFeed() {
   const [authMode, setAuthMode] = useState("login"); 
   const [localVotes, setLocalVotes] = useState({});
   const [followedSources, setFollowedSources] = useState([]);
-  const [bookmarkedArticleIds, setBookmarkedArticleIds] = useState([]); // Track bookmarks locally
+  const [bookmarkedArticleIds, setBookmarkedArticleIds] = useState([]); 
   
   // Share Modal State
   const [shareModalData, setShareModalData] = useState(null);
@@ -346,7 +246,9 @@ function NewsFeed() {
               });
             }
             // Auto scroll to feed
-            document.getElementById('live-feed')?.scrollIntoView({ behavior: 'smooth' });
+            setTimeout(() => {
+              document.getElementById('live-feed')?.scrollIntoView({ behavior: 'smooth' });
+            }, 500);
           }
         }
 
@@ -363,7 +265,6 @@ function NewsFeed() {
     };
     fetchNews();
 
-    // Fetch Map Data
     const fetchMapData = async () => {
       try {
         const crisesRes = await fetch('https://kagojerstup.onrender.com/api/crises');
@@ -395,7 +296,7 @@ function NewsFeed() {
     fetchTrending();
   }, [trendingWindow]);
 
-  // Passive alerts based on region dropdown
+  // Passive alerts
   useEffect(() => {
     const checkAlerts = async () => {
       if (activeRegion === 'All') {
@@ -436,7 +337,7 @@ function NewsFeed() {
         if (followRes.ok) setFollowedSources(await followRes.json());
         if (bookRes.ok) {
           const books = await bookRes.json();
-          setBookmarkedArticleIds(books.map(b => b.id)); // Store only IDs for quick lookup
+          setBookmarkedArticleIds(books.map(b => b.id)); 
         }
       } catch (error) {
         console.error("Failed to load user data:", error);
@@ -445,7 +346,7 @@ function NewsFeed() {
     fetchUserData();
   }, [currentUser]);
 
-  // Authentication Handlers
+  // Handlers
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError("");
@@ -489,19 +390,18 @@ function NewsFeed() {
     localStorage.removeItem('kagojer_user');
   };
 
-  // Interaction Handlers
-  const handleVote = async (articleId, voteType) => {
+  const handleVote = async (id, voteType) => {
     if (!currentUser) {
       setAuthMode("login");
       setIsAuthModalOpen(true);
       return;
     }
 
-    const previousVote = localVotes[articleId];
+    const previousVote = localVotes[id];
 
     const updateState = (newType) => {
       const updateNews = (news) => {
-        if (news.id === articleId) {
+        if (news.id === id) {
           let newScore = news.score;
           let newReal = news.realVotes || 0;
           let newFake = news.fakeVotes || 0;
@@ -518,7 +418,7 @@ function NewsFeed() {
       };
       
       setNewsFeed(prevFeed => prevFeed.map(updateNews));
-      if (highlightedArticle && highlightedArticle.id === articleId) {
+      if (highlightedArticle && highlightedArticle.id === id) {
         setHighlightedArticle(updateNews(highlightedArticle));
       }
     };
@@ -527,7 +427,7 @@ function NewsFeed() {
       updateState(null);
       setLocalVotes(prev => {
         const newState = { ...prev };
-        delete newState[articleId]; 
+        delete newState[id]; 
         return newState;
       });
 
@@ -535,7 +435,7 @@ function NewsFeed() {
         await fetch('https://kagojerstup.onrender.com/api/remove-vote', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentUser.userId, articleId })
+          body: JSON.stringify({ userId: currentUser.userId, articleId: id })
         });
       } catch (error) {
         console.error("Failed to remove vote:", error);
@@ -544,13 +444,13 @@ function NewsFeed() {
     }
 
     updateState(voteType);
-    setLocalVotes(prev => ({ ...prev, [articleId]: voteType }));
+    setLocalVotes(prev => ({ ...prev, [id]: voteType }));
 
     try {
       await fetch('https://kagojerstup.onrender.com/api/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.userId, articleId, voteType })
+        body: JSON.stringify({ userId: currentUser.userId, articleId: id, voteType })
       });
     } catch (error) {
       console.error("Voting failed:", error);
@@ -573,7 +473,7 @@ function NewsFeed() {
         await fetch(`https://kagojerstup.onrender.com/api/bookmarks/${currentUser.userId}/${articleId}`, { method: 'DELETE' });
       } catch (error) {
         console.error("Failed to remove bookmark", error);
-        setBookmarkedArticleIds(prev => [...prev, articleId]); // Revert on failure
+        setBookmarkedArticleIds(prev => [...prev, articleId]); 
       }
     } else {
       setBookmarkedArticleIds(prev => [...prev, articleId]);
@@ -585,7 +485,7 @@ function NewsFeed() {
         });
       } catch (error) {
         console.error("Failed to add bookmark", error);
-        setBookmarkedArticleIds(prev => prev.filter(id => id !== articleId)); // Revert on failure
+        setBookmarkedArticleIds(prev => prev.filter(id => id !== articleId));
       }
     }
   };
@@ -598,10 +498,10 @@ function NewsFeed() {
       });
     }
 
-    // Build the dynamic URL that points back to exactly this article
+    // Build the dynamic URL
     const shareUrl = `${window.location.origin}/news/${article.id || article.article_id}`;
     
-    // Attempt to use native mobile Web Share API first
+    // Attempt Web Share API first
     if (navigator.share) {
       try {
         await navigator.share({
@@ -614,7 +514,7 @@ function NewsFeed() {
         setShareModalData({ ...article, shareUrl });
       }
     } else {
-      // Fallback to our custom modal
+      // Fallback modal
       setShareModalData({ ...article, shareUrl });
     }
   };
@@ -653,7 +553,6 @@ function NewsFeed() {
         const lon = position.coords.longitude;
         setUserLocation({ lat, lng: lon });
 
-        // Check for Active Crisis near User
         const alertRes = await fetch('https://kagojerstup.onrender.com/api/check-crisis-alert', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -667,7 +566,6 @@ function NewsFeed() {
           setLocalCrisisAlert(null); 
         }
         
-        // Reverse-geocode to get the city name
         const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
         const data = await response.json();
         const city = data.city || data.locality || "Dhaka"; 
@@ -700,7 +598,6 @@ function NewsFeed() {
 
     const isCurrentlyFollowing = followedSources.includes(sourceName);
     
-    // Optimistic UI update
     if (isCurrentlyFollowing) {
       setFollowedSources(prev => prev.filter(s => s !== sourceName));
     } else {
@@ -715,7 +612,6 @@ function NewsFeed() {
       });
     } catch (error) {
       console.error("Follow toggle failed:", error);
-      // Revert if API fails
       if (isCurrentlyFollowing) {
         setFollowedSources(prev => [...prev, sourceName]);
       } else {
@@ -739,31 +635,45 @@ function NewsFeed() {
   };
 
   // Reusable News Card Renderer
-  const renderNewsCard = (news, isHighlighted = false) => {
-    const isBookmarked = bookmarkedArticleIds.includes(news.id || news.article_id);
+  // Includes FIX for broken footer structure
+  const renderNewsCard = (news, isHighlighted = false, rank = null) => {
+    const articleId = news.id || news.article_id;
+    const isBookmarked = bookmarkedArticleIds.includes(articleId);
 
     return (
-      <article key={news.id || news.article_id} className={`bg-slate-50 border rounded-xl p-6 transition-all flex flex-col justify-between h-fit
+      <article key={articleId} className={`bg-white border rounded-2xl p-6 transition-all flex flex-col justify-between h-full relative overflow-hidden group
         ${isHighlighted ? 'border-blue-500 shadow-xl shadow-blue-900/10 ring-2 ring-blue-200 mb-8' : 'border-[#E2E8F0] hover:border-[#2563EB] hover:shadow-lg'}
       `}>
+        {/* Render Rank if passed (for Trending Section) */}
+        {rank && (
+          <div className={`absolute -right-4 -top-4 w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black opacity-10 pointer-events-none group-hover:scale-110 transition-transform ${
+            rank === 1 ? 'bg-amber-500 text-amber-900' : 
+            rank === 2 ? 'bg-slate-400 text-slate-800' : 
+            rank === 3 ? 'bg-orange-400 text-orange-900' : 
+            'bg-slate-300 text-slate-600'
+          }`}>
+            #{rank}
+          </div>
+        )}
+
         {isHighlighted && (
-          <div className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full w-max mb-4 uppercase tracking-wider">
+          <div className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full w-max mb-4 uppercase tracking-wider relative z-10">
             Shared Article
           </div>
         )}
         
-        <div>
-          <div className="flex justify-between items-start mb-4">
+        <div className="relative z-10 flex-grow flex flex-col">
+          <div className="flex justify-between items-start mb-4 gap-2">
             <div className="flex gap-2 items-center flex-wrap">
-              <span className="bg-white text-slate-700 text-xs font-bold px-2.5 py-1 rounded-md border border-[#E2E8F0] uppercase tracking-wider">
+              <span className="bg-white text-slate-700 text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-2.5 sm:py-1 rounded-md border border-[#E2E8F0] uppercase tracking-wider">
                 {news.category}
               </span>
-              <span className="text-xs font-bold px-2.5 py-1 rounded-md border flex items-center gap-1 bg-transparent text-slate-500 border-dashed border-slate-300">
+              <span className="text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-2.5 sm:py-1 rounded-md border flex items-center gap-1 bg-transparent text-slate-500 border-dashed border-slate-300">
                 <MapPinIcon className="w-3 h-3" /> {news.region || news.region_name}
               </span>
             </div>
             
-            <div className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-md border transition-colors
+            <div className={`flex items-center gap-1 text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-2.5 sm:py-1 rounded-md border transition-colors shrink-0
               ${(news.score || news.trending_score) >= 80 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 
                 (news.score || news.trending_score) >= 50 ? 'bg-blue-50 text-blue-800 border-blue-200' : 
                 'bg-red-50 text-red-800 border-red-200'}`}>
@@ -771,122 +681,115 @@ function NewsFeed() {
             </div>
           </div>
 
-          <h3 className="text-xl font-bold text-[#0F172A] mb-3 hover:text-[#2563EB] transition-colors leading-snug">
-            <a href={news.url || news.article_url || "#"} target="_blank" rel="noopener noreferrer" onClick={() => handleArticleClick(news.id || news.article_id)}>
+          <h3 className="text-lg sm:text-xl font-bold text-[#0F172A] mb-3 hover:text-[#2563EB] transition-colors leading-snug">
+            <a href={news.url || news.article_url || "#"} target="_blank" rel="noopener noreferrer" onClick={() => handleArticleClick(articleId)}>
               {news.title}
             </a>
           </h3>
           
-          <div className="mb-5 relative z-10">
-            <p className={`text-sm text-[#64748B] leading-relaxed transition-all duration-300 ${expandedSummaries[news.id || news.article_id] ? '' : 'line-clamp-2'}`}>
-              {translatedArticles[news.id || news.article_id] && news.translation ? news.translation : news.summary}
+          <div className="mb-5">
+            <p className={`text-sm text-[#64748B] leading-relaxed transition-all duration-300 ${expandedSummaries[articleId] ? '' : 'line-clamp-2'}`}>
+              {translatedArticles[articleId] && news.translation ? news.translation : news.summary}
             </p>
             
-            <div className="flex gap-2 mt-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               {news.summary && news.summary.length > 100 && (
                 <button 
-                  onClick={(e) => { e.preventDefault(); toggleSummary(news.id || news.article_id); }}
-                  className="text-xs font-bold text-[#2563EB] bg-blue-100/50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+                  onClick={(e) => { e.preventDefault(); toggleSummary(articleId); }}
+                  className="text-[10px] sm:text-xs font-bold text-[#2563EB] bg-blue-100/50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>✨</span> {expandedSummaries[news.id || news.article_id] ? 'Hide Summary' : 'Read AI Summary'}
+                  <span>✨</span> {expandedSummaries[articleId] ? 'Hide Summary' : 'Read AI Summary'}
                 </button>
               )}
               
               {news.translation && (
                 <button 
-                  onClick={(e) => { e.preventDefault(); toggleTranslation(news.id || news.article_id); }}
-                  className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+                  onClick={(e) => { e.preventDefault(); toggleTranslation(articleId); }}
+                  className="text-[10px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
-                  🌐 {translatedArticles[news.id || news.article_id] ? 'Original' : 'Translate'}
+                  🌐 {translatedArticles[articleId] ? 'Original' : 'Translate'}
                 </button>
               )}
             </div>
           </div>
+          
+          {/* Push sources & footer to the bottom */}
+          <div className="mt-auto">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <span className="text-xs text-slate-500 font-medium">Sources:</span>
+              {(news.sources || [news.source_name]).map((source, idx) => {
+                const isFollowed = followedSources.includes(source);
+                return (
+                  <div key={idx} className="flex items-center bg-white border border-[#E2E8F0] rounded overflow-hidden shadow-sm">
+                    <button 
+                      onClick={() => setActiveSource(source)}
+                      className="text-[10px] sm:text-xs font-semibold text-[#0F172A] hover:bg-blue-50 hover:text-blue-700 px-2 py-1 transition-colors cursor-pointer"
+                    >
+                      {source}
+                    </button>
+                    <button
+                      onClick={() => handleFollowToggle(source)}
+                      className={`px-2 py-1 text-[10px] sm:text-xs border-l border-[#E2E8F0] transition-colors cursor-pointer 
+                        ${isFollowed ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
+                    >
+                      ★
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
-
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className="text-xs text-slate-500 font-medium">Sources:</span>
-            {/* Handle array from feed or single string from trending */}
-            {(news.sources || [news.source_name]).map((source, idx) => {
-              const isFollowed = followedSources.includes(source);
-              return (
-                <div key={idx} className="flex items-center bg-white border border-[#E2E8F0] rounded overflow-hidden shadow-sm relative z-10">
-                  <button 
-                    onClick={() => setActiveSource(source)}
-                    className="text-xs font-semibold text-[#0F172A] hover:bg-blue-50 hover:text-blue-700 px-2 py-1 transition-colors cursor-pointer"
-                  >
-                    {source}
-                  </button>
-                  <button
-                    onClick={() => handleFollowToggle(source)}
-                    className={`px-2 py-1 text-xs border-l border-[#E2E8F0] transition-colors cursor-pointer 
-                      ${isFollowed 
-                        ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
-                        : 'bg-slate-50 text-slate-400 hover:bg-slate-200 hover:text-slate-600'}`}
-                  >
-                    ★
-                  </button>
-                </div>
-              );
-            })}
+        
+        {/* THE FIX: Added flex-wrap and gap-y-3 to gracefully drop buttons to next line if cramped */}
+        <div className="pt-4 border-t border-[#E2E8F0] flex flex-wrap justify-between items-center gap-y-3 gap-x-2 relative z-10 mt-2">
+          <div className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
+            <ClockIcon className="w-3.5 h-3.5" /> {formatDateTime(news.time || news.published_at)}
           </div>
           
-          <div className="pt-4 border-t border-[#E2E8F0] flex flex-col xl:flex-row justify-between xl:items-center gap-4 relative z-10">
-            <div className="flex items-center gap-1 text-xs text-slate-500 font-medium whitespace-nowrap">
-              <ClockIcon className="w-3.5 h-3.5" /> {formatDateTime(news.time || news.published_at)}
-            </div>
+          <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+            <button 
+              onClick={() => handleBookmark(articleId)} 
+              className={`p-1.5 rounded-full border transition-colors ${isBookmarked ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-white text-slate-400 border-[#E2E8F0] hover:text-blue-500 hover:bg-blue-50'}`}
+              title={isBookmarked ? "Remove Bookmark" : "Bookmark Article"}
+            >
+              {isBookmarked ? <BookmarkSolidIcon className="w-4 h-4"/> : <BookmarkOutlineIcon className="w-4 h-4"/>}
+            </button>
             
-            <div className="flex items-center gap-2">
-              
-              {/* Interaction Buttons */}
-              <button 
-                onClick={() => handleBookmark(news.id || news.article_id)} 
-                className={`p-1.5 rounded-full border transition-colors ${isBookmarked ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-white text-slate-400 border-slate-200 hover:text-blue-500 hover:bg-blue-50'}`}
-                title={isBookmarked ? "Remove Bookmark" : "Bookmark Article"}
-              >
-                {isBookmarked ? <BookmarkSolidIcon className="w-4 h-4"/> : <BookmarkOutlineIcon className="w-4 h-4"/>}
-              </button>
-              
-              <button 
-                onClick={() => handleShare(news)} 
-                className="p-1.5 rounded-full border bg-white border-slate-200 text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
-                title="Share Article"
-              >
-                <ShareIcon className="w-4 h-4"/>
-              </button>
-              
-              <div className="w-px h-6 bg-slate-200 mx-1"></div>
+            <button 
+              onClick={() => handleShare(news)} 
+              className="p-1.5 rounded-full border bg-white border-[#E2E8F0] text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+              title="Share Article"
+            >
+              <ShareIcon className="w-4 h-4"/>
+            </button>
+            
+            <div className="w-px h-5 bg-slate-200 mx-0.5 sm:mx-1"></div>
 
-              {/* Voting Buttons */}
-              <button 
-                onClick={(e) => { e.preventDefault(); handleVote(news.id || news.article_id, 'vote_real'); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border
-                  ${localVotes[news.id || news.article_id] === 'vote_real' 
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
-                    : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}
-              >
-                <ThumbsUpIcon className="w-4 h-4" /> Real 
-              </button>
-              
-              <button 
-                onClick={(e) => { e.preventDefault(); handleVote(news.id || news.article_id, 'vote_fake'); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold cursor-pointer border
-                  ${localVotes[news.id || news.article_id] === 'vote_fake' 
-                    ? 'bg-red-100 text-red-800 border-red-300' 
-                    : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}
-              >
-                <ThumbsDownIcon className="w-4 h-4" /> Fake 
-              </button>
-            </div>
+            <button 
+              onClick={(e) => { e.preventDefault(); handleVote(articleId, 'vote_real'); }}
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-bold cursor-pointer border
+                ${localVotes[articleId] === 'vote_real' 
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                  : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}
+            >
+              <ThumbsUpIcon className="w-3.5 h-3.5" /> Real 
+            </button>
+            
+            <button 
+              onClick={(e) => { e.preventDefault(); handleVote(articleId, 'vote_fake'); }}
+              className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded text-[10px] sm:text-xs font-bold cursor-pointer border
+                ${localVotes[articleId] === 'vote_fake' 
+                  ? 'bg-red-100 text-red-800 border-red-300' 
+                  : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-slate-100'}`}
+            >
+              <ThumbsDownIcon className="w-3.5 h-3.5" /> Fake 
+            </button>
           </div>
         </div>
       </article>
     );
   };
-
-  const uniqueCategories = ["All", ...new Set(newsFeed.map(item => item.category).filter(Boolean))];
-  const uniqueSources = ["All", ...new Set(newsFeed.flatMap(item => item.sources).filter(Boolean))];
 
   const filteredFeed = newsFeed.filter(news => {
     // Exclude the highlighted article from the main feed loop to prevent showing it twice
@@ -958,15 +861,21 @@ function NewsFeed() {
         <nav className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-[#E2E8F0] pt-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <Link to="/" className="flex items-center gap-2 cursor-pointer group" onClick={() => window.location.reload()}>
+              
+              {/* THE FIX: Fixed Home Button Routing */}
+              <a href="/" onClick={(e) => { e.preventDefault(); window.scrollTo(0,0); navigate('/'); }} className="flex items-center gap-2 cursor-pointer group">
                 <div className="w-8 h-8 rounded bg-[#2563EB] text-white flex items-center justify-center font-bold text-lg group-hover:bg-blue-700 transition-colors">ক</div>
                 <span className="font-bold text-xl tracking-tight group-hover:text-[#2563EB] transition-colors">কাগজের স্তূপ</span>
-              </Link>
+              </a>
+              
               <div className="hidden md:flex space-x-8">
-                <Link to="/" className="text-[#0F172A] font-medium hover:text-[#2563EB]">Home</Link>
+                {/* THE FIX: Added Live Feed back and fixed Home Button */}
+                <a href="/" onClick={(e) => { e.preventDefault(); window.scrollTo(0,0); navigate('/'); }} className="text-[#0F172A] font-medium hover:text-[#2563EB]">Home</a>
                 <a href="/#trending" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><TrendingIcon className="w-4 h-4"/> Trending</a>
+                <a href="/#live-feed" className="text-[#64748B] font-medium hover:text-[#2563EB]">Live Feed</a>
                 <a href="/#news-map" className="text-[#64748B] font-medium hover:text-[#2563EB] flex items-center gap-1"><MapPinIcon className="w-4 h-4"/> Global Map</a>
               </div>
+
               <div className="flex items-center gap-4">
                 {currentUser ? (
                   <div className="flex items-center gap-4">
@@ -1108,7 +1017,7 @@ function NewsFeed() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {trendingNews.map((news, index) => renderNewsCard(news, false))}
+                {trendingNews.map((news, index) => renderNewsCard(news, false, index + 1))}
               </div>
             )}
           </div>
@@ -1220,30 +1129,19 @@ function NewsFeed() {
                   scrollWheelZoom={true} 
                   style={{ height: "100%", width: "100%", zIndex: 1 }}
                 >
-                  <TileLayer
-                    attribution='&copy; OpenStreetMap'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
+                  <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   
                   {mapNews.map((regionData) => (
                     <Marker 
                       key={regionData.region} 
                       position={[regionData.lat, regionData.lng]} 
                       icon={newsIcon}
-                      eventHandlers={{
-                        click: () => {
-                          setSelectedRegionForSidebar(regionData);
-                        },
-                      }}
+                      eventHandlers={{ click: () => { setSelectedRegionForSidebar(regionData); } }}
                     >
                       <Popup>
                         <div className="p-1 min-w-[200px]">
-                          <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                            {regionData.region}
-                          </span>
-                          <h4 className="font-bold text-sm mt-2 mb-1 leading-tight line-clamp-2">
-                            {regionData.articles[0]?.title}
-                          </h4>
+                          <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">{regionData.region}</span>
+                          <h4 className="font-bold text-sm mt-2 mb-1 leading-tight line-clamp-2">{regionData.articles[0]?.title}</h4>
                           <p className="text-xs text-[#64748B] italic">Click pin to view all articles in sidebar</p>
                         </div>
                       </Popup>
@@ -1255,32 +1153,19 @@ function NewsFeed() {
                       <Marker position={[crisis.latitude, crisis.longitude]} icon={crisisIcon}>
                         <Popup>
                           <div className="p-1 min-w-[200px]">
-                            <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                              CRISIS: {crisis.crisis_type}
-                            </span>
+                            <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">CRISIS: {crisis.crisis_type}</span>
                             <h4 className="font-bold text-sm mt-2 mb-1 leading-tight">{crisis.title}</h4>
                             <p className="text-xs text-slate-500 mt-1 line-clamp-2">{crisis.summary}</p>
                           </div>
                         </Popup>
                       </Marker>
-                      <Circle 
-                        center={[crisis.latitude, crisis.longitude]} 
-                        radius={crisis.radius_km * 1000} 
-                        pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.1, weight: 1 }}
-                      />
+                      <Circle center={[crisis.latitude, crisis.longitude]} radius={crisis.radius_km * 1000} pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.1, weight: 1 }} />
                     </React.Fragment>
                   ))}
 
                   {userLocation && (
                     <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
-                      <Popup>
-                        <div className="p-1 text-center">
-                          <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                            You are here
-                          </span>
-                          <h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4>
-                        </div>
-                      </Popup>
+                      <Popup><div className="p-1 text-center"><span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">You are here</span><h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4></div></Popup>
                     </Marker>
                   )}
                 </MapContainer>
@@ -1292,31 +1177,20 @@ function NewsFeed() {
                     <div className="sticky top-0 bg-white pb-4 border-b border-slate-200 mb-4 z-10 flex justify-between items-center">
                       <div>
                         <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Viewing News For</span>
-                        <h3 className="text-xl font-extrabold text-[#2563EB] flex items-center gap-1.5 mt-1">
-                          <MapPinIcon className="w-5 h-5" /> {selectedRegionForSidebar.region}
-                        </h3>
+                        <h3 className="text-xl font-extrabold text-[#2563EB] flex items-center gap-1.5 mt-1"><MapPinIcon className="w-5 h-5" /> {selectedRegionForSidebar.region}</h3>
                       </div>
-                      <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                        {selectedRegionForSidebar.articles.length} updates
-                      </span>
+                      <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">{selectedRegionForSidebar.articles.length} updates</span>
                     </div>
 
                     <div className="space-y-4 flex-grow">
                       {selectedRegionForSidebar.articles.map(article => (
                         <div key={article.id} className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm hover:border-[#2563EB] transition-colors">
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded">
-                              {article.category}
-                            </span>
-                            <span className="text-[10px] font-semibold text-slate-400">
-                              {formatDateTime(article.published_at)}
-                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded">{article.category}</span>
+                            <span className="text-[10px] font-semibold text-slate-400">{formatDateTime(article.published_at)}</span>
                           </div>
-                          
                           <a href={article.url} target="_blank" rel="noopener noreferrer" className="block group" onClick={() => handleArticleActivity(article.id, 'click')}>
-                            <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-3">
-                              {article.title}
-                            </h4>
+                            <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-3">{article.title}</h4>
                           </a>
                           
                           <p className="text-xs text-[#64748B] line-clamp-2 mb-2">
@@ -1334,9 +1208,7 @@ function NewsFeed() {
 
                           <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
                             <span className="text-xs font-semibold text-slate-500">Source: <span className="text-slate-700">{article.source}</span></span>
-                            <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#2563EB] hover:underline" onClick={() => handleArticleActivity(article.id, 'click')}>
-                              Read Full ↗
-                            </a>
+                            <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#2563EB] hover:underline" onClick={() => handleArticleActivity(article.id, 'click')}>Read Full ↗</a>
                           </div>
                         </div>
                       ))}
@@ -1356,49 +1228,30 @@ function NewsFeed() {
         </section>
 
         {/* Feature 1: Region-Based News Ranking */}
-        <section id="geo-ranking" className="py-20 bg-white border-t border-[#E2E8F0]">
+        <section id="geo-ranking" className="py-20 bg-slate-50 border-t border-[#E2E8F0]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl mb-4">
-                Your world, centered around you.
-              </h2>
-              <p className="text-lg text-[#64748B]">
-                Our engine detects your geographical context and ranks database entities accordingly. You see critical local updates first, followed by national and international events.
-              </p>
+              <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl mb-4">Your world, centered around you.</h2>
+              <p className="text-lg text-[#64748B]">Our engine detects your geographical context and ranks database entities accordingly. You see critical local updates first, followed by national and international events.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
               <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-blue-200 via-slate-200 to-slate-200 -z-10 transform -translate-y-1/2"></div>
-              
-              <article className="bg-[#F8FAFC] rounded-2xl shadow-sm border border-[#2563EB] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md">
-                <div className="absolute -top-4 left-6 bg-[#2563EB] text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
-                  <MapPinIcon className="w-3 h-3" /> Priority 1: Local
-                </div>
-                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]">
-                  <span className="font-semibold text-[#0F172A]">Dhaka</span> • 2km away
-                </div>
+              <article className="bg-white rounded-2xl shadow-sm border border-[#2563EB] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md">
+                <div className="absolute -top-4 left-6 bg-[#2563EB] text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1"><MapPinIcon className="w-3 h-3" /> Priority 1: Local</div>
+                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">Dhaka</span> • 2km away</div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">Water logging alert in Dhanmondi</h3>
                 <p className="text-sm text-[#64748B]">Heavy rainfall has caused severe water logging. Avoid Road 27 if possible.</p>
               </article>
-              
-              <article className="bg-[#F8FAFC] rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-95">
-                <div className="absolute -top-4 left-6 bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                  Priority 2: National
-                </div>
-                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]">
-                  <span className="font-semibold text-[#0F172A]">Bangladesh</span> • Regional
-                </div>
+              <article className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-95">
+                <div className="absolute -top-4 left-6 bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">Priority 2: National</div>
+                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">Bangladesh</span> • Regional</div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">New Taxation Policy Announced</h3>
                 <p className="text-sm text-[#64748B]">The NBR has updated the fiscal year tax brackets for individual taxpayers.</p>
               </article>
-              
-              <article className="bg-[#F8FAFC] rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-75">
-                <div className="absolute -top-4 left-6 bg-slate-300 text-slate-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                  Priority 3: Global
-                </div>
-                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]">
-                  <span className="font-semibold text-[#0F172A]">International</span> • Global
-                </div>
+              <article className="bg-white rounded-2xl shadow-sm border border-[#E2E8F0] p-6 relative transform transition-transform hover:-translate-y-1 hover:shadow-md opacity-75">
+                <div className="absolute -top-4 left-6 bg-slate-300 text-slate-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm">Priority 3: Global</div>
+                <div className="mt-4 mb-2 flex items-center gap-2 text-sm text-[#64748B]"><span className="font-semibold text-[#0F172A]">International</span> • Global</div>
                 <h3 className="text-xl font-bold text-[#0F172A] mb-2">European Markets Close Higher</h3>
                 <p className="text-sm text-[#64748B]">Tech stocks rally late in the day leading to a positive close across European indices.</p>
               </article>
@@ -1407,31 +1260,24 @@ function NewsFeed() {
         </section>
 
         {/* Feature 2: Source Credibility Scoring */}
-        <section id="credibility" className="py-20 bg-[#F8FAFC]">
+        <section id="credibility" className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col lg:flex-row items-center gap-16">
-              
               <div className="w-full lg:w-1/2 order-2 lg:order-1">
-                <div className="bg-white rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
+                <div className="bg-slate-50 rounded-2xl p-8 border border-[#E2E8F0] relative flex justify-center items-center min-h-[350px]">
                   <div className="absolute z-10 bg-white border-2 border-[#2563EB] rounded-xl p-4 shadow-lg w-48 text-center text-sm font-bold text-[#0F172A]">
                     Event Entity: <br/> Election Results
-                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs border border-emerald-200">
-                      Score: 92%
-                    </div>
+                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs border border-emerald-200">Score: 92%</div>
                   </div>
                   <div className="absolute top-8 left-8 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
-                     <div className="w-6 h-6 rounded bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">B</div>
-                     <span className="text-xs font-semibold">BBC News</span>
+                     <div className="w-6 h-6 rounded bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">B</div><span className="text-xs font-semibold">BBC News</span>
                   </div>
                   <div className="absolute top-8 right-8 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
-                     <div className="w-6 h-6 rounded bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">R</div>
-                     <span className="text-xs font-semibold">Reuters</span>
+                     <div className="w-6 h-6 rounded bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">R</div><span className="text-xs font-semibold">Reuters</span>
                   </div>
                   <div className="absolute bottom-8 right-16 bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex items-center gap-2 z-20">
-                     <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">A</div>
-                     <span className="text-xs font-semibold">Al Jazeera</span>
+                     <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">A</div><span className="text-xs font-semibold">Al Jazeera</span>
                   </div>
-
                   <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
                     <line x1="20%" y1="20%" x2="40%" y2="40%" stroke="#10B981" strokeWidth="2" strokeDasharray="4 4" />
                     <line x1="80%" y1="20%" x2="60%" y2="40%" stroke="#10B981" strokeWidth="2" strokeDasharray="4 4" />
@@ -1444,39 +1290,19 @@ function NewsFeed() {
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-sm uppercase tracking-wide">
                   <ShieldCheckIcon className="w-4 h-4" /> Database-Verified Trust
                 </div>
-                <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl">
-                  Truth through consensus.
-                </h2>
-                <p className="text-lg text-[#64748B]">
-                  In an era of misinformation, single-source news isn't enough. Our backend algorithms map news articles to specific events and calculate a dynamic credibility score based on the weight and volume of trusted sources reporting it.
-                </p>
-                
+                <h2 className="text-3xl font-extrabold tracking-tight text-[#0F172A] sm:text-4xl">Truth through consensus.</h2>
+                <p className="text-lg text-[#64748B]">In an era of misinformation, single-source news isn't enough. Our backend algorithms map news articles to specific events and calculate a dynamic credibility score based on the weight and volume of trusted sources reporting it.</p>
                 <ul className="space-y-4 mt-6">
                   <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-[#0F172A]">High Credibility ({'>'}80%)</p>
-                      <p className="text-sm text-[#64748B]">Event verified by multiple established global and national sources.</p>
-                    </div>
+                    <div className="flex-shrink-0 mt-1"><div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center"><svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg></div></div>
+                    <div><p className="font-semibold text-[#0F172A]">High Credibility ({'>'}80%)</p><p className="text-sm text-[#64748B]">Event verified by multiple established global and national sources.</p></div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-[#0F172A]">Low Credibility ({'<'}50%)</p>
-                      <p className="text-sm text-[#64748B]">Single-source report from an unverified or historically biased publication.</p>
-                    </div>
+                    <div className="flex-shrink-0 mt-1"><div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center"><svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div></div>
+                    <div><p className="font-semibold text-[#0F172A]">Low Credibility ({'<'}50%)</p><p className="text-sm text-[#64748B]">Single-source report from an unverified or historically biased publication.</p></div>
                   </li>
                 </ul>
               </div>
-
             </div>
           </div>
         </section>
