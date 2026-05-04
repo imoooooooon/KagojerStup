@@ -23,6 +23,7 @@ const crisisIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 =======
 // Custom Blue Icon for Standard Breaking News
@@ -56,6 +57,8 @@ const userLocationIcon = new L.Icon({
 });
 
 >>>>>>> 75280cb1906eabf107b6f8afb1e9362567bf645a
+=======
+>>>>>>> Stashed changes
 // --- Icons ---
 const MapPinIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -129,8 +132,11 @@ function NewsFeed() {
   const [isLocating, setIsLocating] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [mapCrises, setMapCrises] = useState([]);
+<<<<<<< Updated upstream
   const [mapNews, setMapNews] = useState([]); // Array of grouped articles by region
   const [selectedRegionForSidebar, setSelectedRegionForSidebar] = useState(null); // The region currently clicked on map
+=======
+>>>>>>> Stashed changes
   
   const [expandedSummaries, setExpandedSummaries] = useState({});
   const [newsFeed, setNewsFeed] = useState([]);
@@ -766,6 +772,7 @@ function NewsFeed() {
                   <AlertTriangleIcon className="w-6 h-6 text-red-600" />
                   <h2 className="text-3xl font-extrabold text-[#0F172A]">Live Crisis Map</h2>
                 </div>
+<<<<<<< Updated upstream
                 <p className="text-[#64748B]">Click on a <strong className="text-blue-600">blue pin</strong> to see breaking news, or a <strong className="text-red-600">red pin</strong> for active crises.</p>
               </div>
             </div>
@@ -799,6 +806,28 @@ function NewsFeed() {
                       }}
                     >
 >>>>>>> 75280cb1906eabf107b6f8afb1e9362567bf645a
+=======
+                <p className="text-[#64748B]">Real-time physical locations of major events extracted from validated news sources.</p>
+              </div>
+            </div>
+
+            <div className="h-[500px] w-full rounded-2xl overflow-hidden border border-[#E2E8F0] shadow-md relative z-10">
+              <MapContainer 
+                center={[23.6850, 90.3563]} // Center of Bangladesh
+                zoom={7} 
+                scrollWheelZoom={false}
+                style={{ height: "100%", width: "100%", zIndex: 1 }}
+              >
+                <TileLayer
+                  attribution='&copy; OpenStreetMap'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                
+                {/* Draw active crises on map */}
+                {mapCrises.map((crisis) => (
+                  <React.Fragment key={crisis.crisis_id}>
+                    <Marker position={[crisis.latitude, crisis.longitude]} icon={crisisIcon}>
+>>>>>>> Stashed changes
                       <Popup>
                         <div className="p-1 min-w-[200px]">
                           <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
@@ -819,106 +848,11 @@ function NewsFeed() {
                   </React.Fragment>
                 ))}
 
-<<<<<<< HEAD
                 {/* Draw the user's location if known */}
                 {userLocation && (
                   <Marker position={[userLocation.lat, userLocation.lng]}>
                     <Popup>Your Location</Popup>
                   </Marker>
-=======
-                  {/* Draw active crises (Red Pins & Radius) */}
-                  {mapCrises.map((crisis) => (
-                    <React.Fragment key={crisis.crisis_id}>
-                      <Marker position={[crisis.latitude, crisis.longitude]} icon={crisisIcon}>
-                        <Popup>
-                          <div className="p-1 min-w-[200px]">
-                            <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                              CRISIS: {crisis.crisis_type}
-                            </span>
-                            <h4 className="font-bold text-sm mt-2 mb-1 leading-tight">{crisis.title}</h4>
-                            <p className="text-xs text-slate-500 mt-1 line-clamp-2">{crisis.summary}</p>
-                          </div>
-                        </Popup>
-                      </Marker>
-                      <Circle 
-                        center={[crisis.latitude, crisis.longitude]} 
-                        radius={crisis.radius_km * 1000} 
-                        pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.1, weight: 1 }}
-                      />
-                    </React.Fragment>
-                  ))}
-
-                  {/* Draw user's live location if known */}
-                  {userLocation && (
-                    <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
-                      <Popup>
-                        <div className="p-1 text-center">
-                          <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-                            You are here
-                          </span>
-                          <h4 className="font-bold text-sm mt-2 mb-1">Your Live Location</h4>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  )}
-                </MapContainer>
-              </div>
-
-              {/* The Dynamic Sidebar */}
-              <div className="w-full lg:w-1/3 h-[500px] lg:h-full bg-slate-50 border border-[#E2E8F0] rounded-2xl p-4 overflow-y-auto map-sidebar shadow-inner flex flex-col">
-                {selectedRegionForSidebar ? (
-                  <>
-                    <div className="sticky top-0 bg-slate-50 pb-4 border-b border-slate-200 mb-4 z-10 flex justify-between items-center">
-                      <div>
-                        <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Viewing News For</span>
-                        <h3 className="text-xl font-extrabold text-[#2563EB] flex items-center gap-1.5 mt-1">
-                          <MapPinIcon className="w-5 h-5" /> {selectedRegionForSidebar.region}
-                        </h3>
-                      </div>
-                      <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
-                        {selectedRegionForSidebar.articles.length} updates
-                      </span>
-                    </div>
-
-                    <div className="space-y-4 flex-grow">
-                      {selectedRegionForSidebar.articles.map(article => (
-                        <div key={article.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-blue-300 transition-colors">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                              {article.category}
-                            </span>
-                            <span className="text-[10px] font-semibold text-slate-400">
-                              {formatDateTime(article.published_at)}
-                            </span>
-                          </div>
-                          
-                          <a href={article.url} target="_blank" rel="noopener noreferrer" className="block group">
-                            <h4 className="font-bold text-[#0F172A] text-sm leading-snug mb-2 group-hover:text-[#2563EB] transition-colors line-clamp-3">
-                              {article.title}
-                            </h4>
-                          </a>
-                          
-                          <p className="text-xs text-[#64748B] line-clamp-2 mb-3">
-                            {article.summary}
-                          </p>
-                          
-                          <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
-                            <span className="text-xs font-semibold text-slate-500">Source: <span className="text-slate-700">{article.source}</span></span>
-                            <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-[#2563EB] hover:underline">
-                              Read Full ↗
-                            </a>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex-grow flex flex-col items-center justify-center text-center px-6 opacity-50">
-                    <MapPinIcon className="w-16 h-16 text-slate-300 mb-4" />
-                    <h3 className="text-lg font-bold text-slate-500">No Region Selected</h3>
-                    <p className="text-sm text-slate-400 mt-2">Click on any blue pin on the map to explore breaking news from that specific area.</p>
-                  </div>
->>>>>>> 75280cb1906eabf107b6f8afb1e9362567bf645a
                 )}
               </MapContainer>
             </div>
