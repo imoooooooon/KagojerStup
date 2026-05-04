@@ -256,12 +256,18 @@ app.get('/api/alerts', async (req, res) => {
 app.get('/api/crises', async (req, res) => {
   try {
     const query = `
-      SELECT ce.*, na.title, na.category, na.summary 
+      SELECT 
+        ce.event_id AS crisis_id, 
+        ce.crisis_type, 
+        ce.severity_level, 
+        ce.latitude, 
+        ce.longitude, 
+        ce.radius_km, 
+        (SELECT title FROM news_article WHERE event_id = ce.event_id LIMIT 1) AS title,
+        ca.alert_message AS summary 
       FROM crisis_event ce
-      JOIN event e ON ce.event_id = e.event_id
-      JOIN news_article na ON e.event_id = na.event_id
-      WHERE ce.is_active = TRUE
-      GROUP BY ce.crisis_id
+      LEFT JOIN crisis_alert ca ON ce.event_id = ca.event_id
+      WHERE ce.is_active = TRUE AND ce.latitude IS NOT NULL
     `;
     const [crises] = await pool.execute(query);
     res.json(crises);
