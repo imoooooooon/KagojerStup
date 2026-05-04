@@ -22,7 +22,7 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Start the RSS news fetcher
+// Start the RSS news fetcher 
 startNewsFetcher(pool);
 
 // ==========================================
@@ -252,7 +252,7 @@ app.get('/api/alerts', async (req, res) => {
   }
 });
 
-// NEW API Endpoint: Get all active crises for the Map
+// API Endpoint: Get all active crises for the Map
 app.get('/api/crises', async (req, res) => {
   try {
     const query = `
@@ -277,13 +277,58 @@ app.get('/api/crises', async (req, res) => {
   }
 });
 
-// NEW API Endpoint: Check User Proximity (Active Alerts)
+// NEW API Endpoint (Feature 8): Get Location-Based Breaking News Grouped by Region
+app.get('/api/map-news', async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        r.region_name, r.latitude, r.longitude,
+        na.article_id, na.title, na.summary, na.category, na.published_at, na.article_url,
+        ns.source_name
+      FROM region r
+      JOIN event e ON r.region_id = e.region_id
+      JOIN news_article na ON e.event_id = na.event_id
+      JOIN news_source ns ON na.source_id = ns.source_id
+      WHERE r.latitude IS NOT NULL AND r.longitude IS NOT NULL
+      ORDER BY na.published_at DESC
+    `;
+    const [rows] = await pool.execute(sql);
+
+    // Grouping the articles by region name for the frontend
+    const grouped = rows.reduce((acc, row) => {
+      if (!acc[row.region_name]) {
+        acc[row.region_name] = {
+          region: row.region_name,
+          lat: row.latitude,
+          lng: row.longitude,
+          articles: []
+        };
+      }
+      acc[row.region_name].articles.push({
+        id: row.article_id,
+        title: row.title,
+        summary: row.summary,
+        category: row.category,
+        published_at: row.published_at,
+        url: row.article_url,
+        source: row.source_name
+      });
+      return acc;
+    }, {});
+
+    res.json(Object.values(grouped));
+  } catch (error) {
+    console.error("Failed to fetch map news:", error);
+    res.status(500).json({ error: 'Failed to fetch map news data' });
+  }
+});
+
+// API Endpoint: Check User Proximity (Active Alerts)
 app.post('/api/check-crisis-alert', async (req, res) => {
   try {
     const { lat, lng } = req.body;
     if (!lat || !lng) return res.status(400).json({ error: "Missing coordinates" });
 
-    // Haversine formula to check if distance is <= radius
     const query = `
       SELECT ce.crisis_id, ce.crisis_type, ce.severity_level, ce.radius_km, na.title, na.summary,
         ( 6371 * acos( cos( radians(?) ) * cos( radians( ce.latitude ) ) * 
