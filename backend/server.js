@@ -181,8 +181,7 @@ app.get('/api/news/personalized', async (req, res) => {
 
       let personalSortWeight = finalScore; 
       
-      // Boost 1: Category Match (More clicks = higher boost)
-      if (preferredCategories[row.category]) {
+      // Boost 1: Category Match (More clicks = higher boost)      if (preferredCategories[row.category]) {
         // THE FIX: Cap the category boost at 40 points. 
         // Without this Math.min limit, clicking a category 50 times adds 500 points and permanently breaks the feed!
         personalSortWeight += Math.min(preferredCategories[row.category] * 10, 40); 
@@ -364,7 +363,10 @@ app.get('/api/map-news', async (req, res) => {
       ORDER BY na.published_at DESC
     `;
     const [rows] = await pool.execute(sql);
-
+    
+    //Breakng News
+    
+    
     const grouped = rows.reduce((acc, row) => {
       if (!acc[row.region_name]) {
         acc[row.region_name] = {
